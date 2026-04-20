@@ -43,8 +43,8 @@ export default function MiniBoardSVG() {
   return (
     <svg
       viewBox={`0 0 ${SIZE} ${SIZE}`}
-      width={SIZE}
-      height={SIZE}
+      width="100%"
+      height="100%"
       style={{ background: '#0C0C22', display: 'block' }}
     >
       {/* Board background */}

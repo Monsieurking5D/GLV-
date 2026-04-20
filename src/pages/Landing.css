@@ -177,8 +177,10 @@
 }
 
 .mini-board {
-  width: 380px;
-  height: 380px;
+  width: 100%;
+  max-width: 380px;
+  height: auto;
+  aspect-ratio: 1;
   border-radius: var(--radius-xl);
   border: 2px solid var(--border-glass);
   box-shadow: var(--shadow-gold), var(--shadow-card);
@@ -435,4 +437,8 @@
   .hero-stats { justify-content: center; }
   .hero-badge { margin: 0 auto; }
   .hero-subtitle { margin: 0 auto; }
+  
+  .steps-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }

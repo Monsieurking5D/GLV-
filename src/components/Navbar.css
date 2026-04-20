@@ -243,6 +243,8 @@
 /* Hamburger */
 .hamburger {
   display: none;
+  visibility: hidden;
+  pointer-events: none;
   flex-direction: column;
   gap: 5px;
   background: none;
@@ -298,7 +300,7 @@
 @media (max-width: 768px) {
   .navbar-links { display: none; }
   .user-name { display: none; }
-  .hamburger { display: flex; }
+  .hamburger { display: flex; visibility: visible; pointer-events: auto; }
   .mobile-menu { display: flex; }
   .auth-buttons { display: none; }
 }

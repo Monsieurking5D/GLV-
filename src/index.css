@@ -524,3 +524,13 @@ a { text-decoration: none; color: inherit; }
   h1 { font-size: 2rem; }
   h2 { font-size: 1.625rem; }
 }
+
+/* --- Accessibility --- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

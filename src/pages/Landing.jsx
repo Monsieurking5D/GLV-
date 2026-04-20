@@ -204,16 +204,27 @@ export default function Landing() {
         <div className="cta-bg" />
         <div className="cta-card">
           <div className="hero-badge" style={{margin: '0 auto var(--space-6)'}}>
-            🎁 Offre de lancement
+            {isAuthenticated ? '🎮 Prêt à jouer ?' : '🎁 Offre de lancement'}
           </div>
-          <h2>Recevez <span className="text-gradient-gold">100€ offerts</span><br />à l'inscription</h2>
-          <p>Créez votre compte maintenant et commencez à jouer immédiatement avec votre bonus de bienvenue.</p>
+          <h2>
+            {isAuthenticated ? (
+              <>Plongez dans l'<span className="text-gradient-gold">Action</span><br />dès maintenant</>
+            ) : (
+              <>Recevez <span className="text-gradient-gold">100€ offerts</span><br />à l'inscription</>
+            )}
+          </h2>
+          <p>
+            {isAuthenticated 
+              ? "Rejoignez le Lobby, choisissez votre mise et affrontez des joueurs du monde entier."
+              : "Créez votre compte maintenant et commencez à jouer immédiatement avec votre bonus de bienvenue."
+            }
+          </p>
           <button
             className="btn btn-gold btn-xl"
-            onClick={() => navigate('/auth?mode=register')}
+            onClick={() => navigate(isAuthenticated ? '/lobby' : '/auth?mode=register')}
             id="cta-register-btn"
           >
-            🎲 Réclamer mon bonus
+            {isAuthenticated ? '🎮 Jouer Maintenant' : '🎲 Réclamer mon bonus'}
           </button>
         </div>
       </section>
