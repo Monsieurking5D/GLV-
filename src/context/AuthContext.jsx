@@ -1,137 +1,146 @@
-// src/context/AuthContext.jsx
 import { createContext, useContext, useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
 
 const AuthContext = createContext(null);
-
-// Mock users pour développement sans Supabase
-const MOCK_USERS_KEY = 'goldenludo_users';
-const MOCK_SESSION_KEY = 'goldenludo_session';
-
-function getMockUsers() {
-  try {
-    return JSON.parse(localStorage.getItem(MOCK_USERS_KEY) || '[]');
-  } catch { return []; }
-}
-
-function saveMockUsers(users) {
-  localStorage.setItem(MOCK_USERS_KEY, JSON.stringify(users));
-}
-
-function getSession() {
-  try {
-    return JSON.parse(localStorage.getItem(MOCK_SESSION_KEY) || 'null');
-  } catch { return null; }
-}
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // Charger la session depuis le localStorage
-    const session = getSession();
-    if (session) {
-      setUser(session.user);
-      setProfile(session.profile);
+  // Fonction pour récupérer le profil et historique des transactions depuis Supabase
+  const fetchProfile = async (userId) => {
+    try {
+      const { data: userProfile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+      
+      if (profileError) throw profileError;
+
+      const { data: transactions, error: txError } = await supabase
+        .from('transactions')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+
+      if (txError) throw txError;
+
+      // Adapter les noms de colonnes SQL (snake_case) vers le camelCase utilisé dans le front-end
+      setProfile({
+        ...userProfile,
+        walletBalance: userProfile.wallet_balance,
+        gamesPlayed: userProfile.games_played,
+        gamesWon: userProfile.games_won,
+        transactions: transactions || []
+      });
+    } catch (error) {
+      console.error("Erreur lors du chargement du profil:", error);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
+  };
+
+  useEffect(() => {
+    // 1. Initialisation
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user || null);
+      if (session?.user) {
+        fetchProfile(session.user.id);
+      } else {
+        setLoading(false);
+      }
+    });
+
+    // 2. Écouter les changements (connexion, déconnexion)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user || null);
+      if (session?.user) {
+        fetchProfile(session.user.id);
+      } else {
+        setProfile(null);
+        setLoading(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const signUp = async (email, password, username) => {
-    const users = getMockUsers();
-    const existing = users.find(u => u.email === email);
-    if (existing) throw new Error('Cet email est déjà utilisé.');
-
-    const usernameExists = users.find(u => u.username === username);
-    if (usernameExists) throw new Error('Ce nom d\'utilisateur est déjà pris.');
-
-    const newUser = {
-      id: `user_${Date.now()}`,
+    const { data, error } = await supabase.auth.signUp({
       email,
-      password, // En production: toujours hasher !
-      username,
-      createdAt: new Date().toISOString(),
-    };
-
-    const newProfile = {
-      id: newUser.id,
-      username,
-      email,
-      avatar: username.charAt(0).toUpperCase(),
-      walletBalance: 100, // 100€ de bonus de bienvenue
-      gamesPlayed: 0,
-      gamesWon: 0,
-      totalWin: 0,
-      transactions: [
-        {
-          id: `tx_${Date.now()}`,
-          type: 'deposit',
-          amount: 100,
-          description: '🎁 Bonus de bienvenue',
-          date: new Date().toISOString(),
+      password,
+      options: {
+        data: {
+          username: username, // Passé aux meta-données, lu par notre Trigger SQL
         }
-      ],
-    };
-
-    users.push({ ...newUser, profile: newProfile });
-    saveMockUsers(users);
-
-    const session = { user: newUser, profile: newProfile };
-    localStorage.setItem(MOCK_SESSION_KEY, JSON.stringify(session));
-    setUser(newUser);
-    setProfile(newProfile);
-
-    return { user: newUser, profile: newProfile };
+      }
+    });
+    if (error) throw error;
+    return { user: data.user, profile: null };
   };
 
   const signIn = async (email, password) => {
-    const users = getMockUsers();
-    const found = users.find(u => u.email === email && u.password === password);
-    if (!found) throw new Error('Email ou mot de passe incorrect.');
-
-    const session = { user: found, profile: found.profile };
-    localStorage.setItem(MOCK_SESSION_KEY, JSON.stringify(session));
-    setUser(found);
-    setProfile(found.profile);
-
-    return session;
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    });
+    if (error) throw error;
+    return data;
   };
 
-  const signOut = () => {
-    localStorage.removeItem(MOCK_SESSION_KEY);
-    setUser(null);
-    setProfile(null);
+  const signOut = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
   };
 
-  const updateProfile = (updates) => {
+  const updateProfile = async (updates) => {
+    if (!user) return;
+    
+    // Mise à jour optimiste (locale)
     const newProfile = { ...profile, ...updates };
     setProfile(newProfile);
 
-    // Mettre à jour dans le storage
-    const users = getMockUsers();
-    const idx = users.findIndex(u => u.id === user.id);
-    if (idx >= 0) {
-      users[idx].profile = newProfile;
-      saveMockUsers(users);
-      const session = getSession();
-      if (session) {
-        localStorage.setItem(MOCK_SESSION_KEY, JSON.stringify({ ...session, profile: newProfile }));
+    // Mappage des champs camelCase vers snake_case pour SQL
+    const dbUpdates = {};
+    if (updates.walletBalance !== undefined) dbUpdates.wallet_balance = updates.walletBalance;
+    if (updates.gamesPlayed !== undefined) dbUpdates.games_played = updates.gamesPlayed;
+    if (updates.gamesWon !== undefined) dbUpdates.games_won = updates.gamesWon;
+    
+    if (Object.keys(dbUpdates).length > 0) {
+      const { error } = await supabase
+        .from('profiles')
+        .update(dbUpdates)
+        .eq('id', user.id);
+      
+      if (error) {
+        console.error("Erreur lors de la mise à jour du profil:", error);
       }
     }
   };
 
-  const addTransaction = (transaction) => {
-    const newTransaction = {
-      id: `tx_${Date.now()}`,
-      date: new Date().toISOString(),
-      ...transaction,
-    };
-    const newTransactions = [newTransaction, ...(profile?.transactions || [])];
-    updateProfile({
-      transactions: newTransactions,
-      walletBalance: (profile?.walletBalance || 0) + transaction.amount,
-    });
+  const addTransaction = async (transaction) => {
+    if (!user) return;
+    
+    const { data, error } = await supabase
+      .from('transactions')
+      .insert([{ 
+        user_id: user.id, 
+        amount: transaction.amount, 
+        type: transaction.type, 
+        description: transaction.description 
+      }])
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Erreur ajout transaction:", error);
+      throw error;
+    }
+
+    // Rafraîchir les données
+    await fetchProfile(user.id);
   };
 
   return (
