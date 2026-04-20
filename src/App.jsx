@@ -6,6 +6,7 @@ import Landing from './pages/Landing.jsx';
 import Auth from './pages/Auth.jsx';
 import Lobby from './pages/Lobby.jsx';
 import Game from './pages/Game.jsx';
+import Leaderboard from './pages/Leaderboard.jsx';
 
 function PrivateRoute({ children }) {
   const { isAuthenticated, loading } = useAuth();
@@ -57,6 +58,14 @@ function AppRoutes() {
           element={
             <PrivateRoute>
               <Game />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/leaderboard"
+          element={
+            <PrivateRoute>
+              <Leaderboard />
             </PrivateRoute>
           }
         />

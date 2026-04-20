@@ -103,6 +103,7 @@ export default function Lobby() {
 
   const handleDeposit = async () => {
     setDepositLoading(true);
+    // TODO: Remplacer cette fausse attente par une intégration de paiement réelle (Stripe/PayPal) post-MVP.
     await new Promise(r => setTimeout(r, 1200)); // Simulation
 
     addTransaction({

@@ -73,7 +73,7 @@ export default function Game() {
       handleGameEnd(gameState.winner);
     }
     return () => clearTimeout(winnerTimeoutRef.current);
-  }, [gameState.winner, handleGameEnd]);
+  }, [gameState.winner]);
 
   // AI turn
   useEffect(() => {
@@ -95,7 +95,7 @@ export default function Game() {
     }
 
     return () => clearTimeout(aiTimeoutRef.current);
-  }, [gameState.currentPlayerIndex, gameState.diceRolled, currentPlayer?.isAI]);
+  }, [gameState.currentPlayerIndex, gameState.diceRolled, currentPlayer?.isAI, gameState.movablePieces]);
 
   const handleRollDice = useCallback((isAI = false) => {
     if (diceRolling) return;

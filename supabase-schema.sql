@@ -25,11 +25,13 @@ CREATE TABLE IF NOT EXISTS public.transactions (
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.transactions ENABLE ROW LEVEL SECURITY;
 
--- 4. Politiques RLS (Le joueur ne voit que son propre profil et ses transactions)
+-- 4. Politiques RLS
 DROP POLICY IF EXISTS "Les utilisateurs peuvents voir leur propre profil" ON public.profiles;
-CREATE POLICY "Les utilisateurs peuvents voir leur propre profil"
+DROP POLICY IF EXISTS "Tout le monde peut voir les profils" ON public.profiles;
+DROP POLICY IF EXISTS "Leaderboard public" ON public.profiles;
+CREATE POLICY "Leaderboard public"
 ON public.profiles FOR SELECT
-USING ( auth.uid() = id );
+USING (true);
 
 DROP POLICY IF EXISTS "Les utilisateurs peuvents modifier leur propre profil" ON public.profiles;
 CREATE POLICY "Les utilisateurs peuvents modifier leur propre profil"
