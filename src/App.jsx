@@ -1,0 +1,77 @@
+// src/App.jsx
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './context/AuthContext.jsx';
+import Navbar from './components/Navbar.jsx';
+import Landing from './pages/Landing.jsx';
+import Auth from './pages/Auth.jsx';
+import Lobby from './pages/Lobby.jsx';
+import Game from './pages/Game.jsx';
+
+function PrivateRoute({ children }) {
+  const { isAuthenticated, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexDirection: 'column',
+        gap: 16,
+        background: 'var(--bg-deep)',
+      }}>
+        <div className="spinner" style={{ width: 48, height: 48 }} />
+        <p style={{ color: 'var(--text-muted)', fontFamily: 'Outfit, sans-serif' }}>
+          Chargement...
+        </p>
+      </div>
+    );
+  }
+
+  return isAuthenticated ? children : <Navigate to="/auth?mode=login" replace />;
+}
+
+function AppRoutes() {
+  const { isAuthenticated } = useAuth();
+
+  return (
+    <>
+      <Navbar />
+      <Routes>
+        <Route path="/" element={<Landing />} />
+        <Route
+          path="/auth"
+          element={isAuthenticated ? <Navigate to="/lobby" replace /> : <Auth />}
+        />
+        <Route
+          path="/lobby"
+          element={
+            <PrivateRoute>
+              <Lobby />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/game"
+          element={
+            <PrivateRoute>
+              <Game />
+            </PrivateRoute>
+          }
+        />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <BrowserRouter>
+        <AppRoutes />
+      </BrowserRouter>
+    </AuthProvider>
+  );
+}

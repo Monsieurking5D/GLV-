@@ -1,0 +1,246 @@
+// src/pages/Auth.jsx
+import { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext.jsx';
+import './Auth.css';
+
+export default function Auth() {
+  const [searchParams] = useSearchParams();
+  const [mode, setMode] = useState(searchParams.get('mode') || 'login');
+  const [formData, setFormData] = useState({ email: '', password: '', username: '', confirmPassword: '' });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const { signIn, signUp, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (isAuthenticated) navigate('/lobby');
+  }, [isAuthenticated, navigate]);
+
+  useEffect(() => {
+    setMode(searchParams.get('mode') || 'login');
+    setError('');
+  }, [searchParams]);
+
+  const handleChange = (e) => {
+    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    setError('');
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      if (mode === 'register') {
+        if (!formData.username.trim() || formData.username.length < 3) {
+          throw new Error('Le nom d\'utilisateur doit faire au moins 3 caractères.');
+        }
+        if (formData.password.length < 6) {
+          throw new Error('Le mot de passe doit faire au moins 6 caractères.');
+        }
+        if (formData.password !== formData.confirmPassword) {
+          throw new Error('Les mots de passe ne correspondent pas.');
+        }
+        await signUp(formData.email, formData.password, formData.username);
+      } else {
+        await signIn(formData.email, formData.password);
+      }
+      navigate('/lobby');
+    } catch (err) {
+      setError(err.message || 'Une erreur est survenue.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const switchMode = () => {
+    const newMode = mode === 'login' ? 'register' : 'login';
+    navigate(`/auth?mode=${newMode}`);
+    setFormData({ email: '', password: '', username: '', confirmPassword: '' });
+    setError('');
+  };
+
+  return (
+    <div className="auth-page">
+      {/* Background */}
+      <div className="auth-bg">
+        <div className="auth-orb auth-orb-1" />
+        <div className="auth-orb auth-orb-2" />
+        <div className="auth-grid" />
+      </div>
+
+      <div className="auth-container">
+        {/* Logo */}
+        <div className="auth-logo" onClick={() => navigate('/')}>
+          <span className="auth-logo-icon">🎲</span>
+          <span className="auth-logo-text">Golden<span>Ludo</span></span>
+        </div>
+
+        {/* Card */}
+        <div className="auth-card animate-fade-in-up">
+          {/* Header */}
+          <div className="auth-card-header">
+            <h1>{mode === 'login' ? 'Bon retour !' : 'Rejoindre l\'aventure'}</h1>
+            <p>
+              {mode === 'login'
+                ? 'Connectez-vous pour retrouver vos parties et votre solde.'
+                : 'Créez votre compte et recevez 100€ de bonus de bienvenue 🎁'
+              }
+            </p>
+          </div>
+
+          {/* Bonus banner (register only) */}
+          {mode === 'register' && (
+            <div className="bonus-banner">
+              <span>🎁</span>
+              <div>
+                <strong>Bonus de bienvenue</strong>
+                <span>100€ offerts à l'inscription</span>
+              </div>
+            </div>
+          )}
+
+          {/* Form */}
+          <form className="auth-form" onSubmit={handleSubmit} id="auth-form">
+            {mode === 'register' && (
+              <div className="input-group">
+                <label htmlFor="username">Nom d'utilisateur</label>
+                <input
+                  id="username"
+                  name="username"
+                  type="text"
+                  className="input"
+                  placeholder="MonPseudo123"
+                  value={formData.username}
+                  onChange={handleChange}
+                  required
+                  minLength={3}
+                  autoComplete="username"
+                />
+              </div>
+            )}
+
+            <div className="input-group">
+              <label htmlFor="email">Adresse email</label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                className="input"
+                placeholder="vous@exemple.com"
+                value={formData.email}
+                onChange={handleChange}
+                required
+                autoComplete="email"
+              />
+            </div>
+
+            <div className="input-group">
+              <label htmlFor="password">Mot de passe</label>
+              <div className="password-wrapper">
+                <input
+                  id="password"
+                  name="password"
+                  type={showPassword ? 'text' : 'password'}
+                  className="input"
+                  placeholder={mode === 'register' ? 'Minimum 6 caractères' : '••••••••'}
+                  value={formData.password}
+                  onChange={handleChange}
+                  required
+                  minLength={6}
+                  autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                />
+                <button
+                  type="button"
+                  className="password-toggle"
+                  onClick={() => setShowPassword(!showPassword)}
+                  tabIndex={-1}
+                >
+                  {showPassword ? '🙈' : '👁️'}
+                </button>
+              </div>
+            </div>
+
+            {mode === 'register' && (
+              <div className="input-group">
+                <label htmlFor="confirmPassword">Confirmer le mot de passe</label>
+                <input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type="password"
+                  className="input"
+                  placeholder="••••••••"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  required
+                  autoComplete="new-password"
+                />
+              </div>
+            )}
+
+            {/* Error */}
+            {error && (
+              <div className="auth-error">
+                ⚠️ {error}
+              </div>
+            )}
+
+            {/* Submit */}
+            <button
+              type="submit"
+              className="btn btn-gold w-full"
+              style={{ height: 52, fontSize: 'var(--text-lg)' }}
+              disabled={loading}
+              id="auth-submit-btn"
+            >
+              {loading ? (
+                <>
+                  <div className="spinner" style={{ width: 20, height: 20, borderWidth: 2 }} />
+                  Chargement...
+                </>
+              ) : (
+                mode === 'login' ? '🔑 Se Connecter' : '🎲 Créer mon compte'
+              )}
+            </button>
+          </form>
+
+          {/* Mode switch */}
+          <div className="auth-switch">
+            {mode === 'login' ? (
+              <>
+                Pas encore de compte ?{' '}
+                <button className="auth-link" onClick={switchMode} id="switch-to-register">
+                  S'inscrire gratuitement
+                </button>
+              </>
+            ) : (
+              <>
+                Déjà un compte ?{' '}
+                <button className="auth-link" onClick={switchMode} id="switch-to-login">
+                  Se connecter
+                </button>
+              </>
+            )}
+          </div>
+
+          {/* Demo credentials */}
+          {mode === 'login' && (
+            <div className="demo-hint">
+              <p>💡 Compte démo disponible après inscription</p>
+            </div>
+          )}
+        </div>
+
+        <p className="auth-disclaimer">
+          En vous inscrivant, vous acceptez nos{' '}
+          <span className="auth-link-inline">Conditions d'utilisation</span>{' '}
+          et notre politique de{' '}
+          <span className="auth-link-inline">Jeu responsable</span>.
+        </p>
+      </div>
+    </div>
+  );
+}

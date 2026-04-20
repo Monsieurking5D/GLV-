@@ -1,0 +1,139 @@
+/* src/components/Dice.css */
+
+.dice-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.dice {
+  width: 80px;
+  height: 80px;
+  background: linear-gradient(145deg, #1a1a3e, #0e0e28);
+  border: 2px solid var(--dice-color, #F5C518);
+  border-radius: 16px;
+  position: relative;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  box-shadow:
+    0 0 20px color-mix(in srgb, var(--dice-color, #F5C518) 30%, transparent),
+    0 4px 20px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.1);
+  user-select: none;
+}
+
+.dice:hover:not(.disabled):not(.rolling) {
+  transform: translateY(-4px) scale(1.05);
+  box-shadow:
+    0 0 35px color-mix(in srgb, var(--dice-color, #F5C518) 50%, transparent),
+    0 8px 30px rgba(0,0,0,0.6),
+    inset 0 1px 0 rgba(255,255,255,0.15);
+}
+
+.dice:active:not(.disabled):not(.rolling) {
+  transform: translateY(-1px) scale(0.98);
+}
+
+.dice.rolling {
+  animation: dice-shake 0.4s ease-in-out infinite;
+  cursor: not-allowed;
+}
+
+@keyframes dice-shake {
+  0%, 100% { transform: rotate(-8deg) scale(1.05); }
+  25% { transform: rotate(8deg) scale(1.08) translateY(-4px); }
+  50% { transform: rotate(-5deg) scale(1.05) translateY(-6px); }
+  75% { transform: rotate(5deg) scale(1.07) translateY(-3px); }
+}
+
+.dice.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  border-color: var(--border-subtle);
+  box-shadow: none;
+}
+
+.dice-face {
+  position: absolute;
+  inset: 6px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.03);
+}
+
+.dot {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--dice-color, #F5C518);
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--dice-color, #F5C518) 60%, transparent);
+  animation: dot-appear 0.2s ease-out;
+}
+
+@keyframes dot-appear {
+  from { transform: translate(-50%, -50%) scale(0); }
+  to { transform: translate(-50%, -50%) scale(1); }
+}
+
+.dice-question {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+  color: var(--text-muted);
+}
+
+/* Rolling overlay */
+.dice-rolling-overlay {
+  position: absolute;
+  inset: 0;
+  border-radius: 14px;
+  background: rgba(245,197,24,0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dice-spin-dots {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  padding: 8px;
+}
+
+.spin-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #F5C518;
+  animation: spin-blink 0.4s ease-in-out infinite;
+}
+
+.spin-dot:nth-child(2) { animation-delay: 0.1s; }
+.spin-dot:nth-child(3) { animation-delay: 0.2s; }
+.spin-dot:nth-child(4) { animation-delay: 0.15s; }
+.spin-dot:nth-child(5) { animation-delay: 0.25s; }
+.spin-dot:nth-child(6) { animation-delay: 0.3s; }
+
+@keyframes spin-blink {
+  0%, 100% { opacity: 0.2; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+
+.dice-value-label {
+  font-family: 'Outfit', sans-serif;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--gold-primary);
+  text-align: center;
+}
+
+.dice-hint {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  text-align: center;
+}
