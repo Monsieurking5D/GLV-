@@ -1,0 +1,14 @@
+<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="40" height="40" rx="10" fill="url(#logoGrad)"/>
+  <circle cx="12" cy="12" r="4" fill="#0A0A1A"/>
+  <circle cx="28" cy="12" r="4" fill="#0A0A1A"/>
+  <circle cx="12" cy="28" r="4" fill="#0A0A1A"/>
+  <circle cx="28" cy="28" r="4" fill="#0A0A1A"/>
+  <rect x="16" y="18" width="8" height="4" rx="2" fill="#0A0A1A"/>
+  <defs>
+    <linearGradient id="logoGrad" x1="0" y1="0" x2="40" y2="40">
+      <stop stopColor="#F5C518"/>
+      <stop offset="1" stopColor="#E8A800"/>
+    </linearGradient>
+  </defs>
+</svg>

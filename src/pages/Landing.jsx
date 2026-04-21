@@ -1,7 +1,29 @@
 // src/pages/Landing.jsx
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import MiniBoardSVG from '../components/MiniBoardSVG.jsx';
+import './Landing.css';
+
+// Hook pour déclencher les animations d'entrée au scroll
+function useReveal() {
+  const ref = useRef(null);
+  const [isVisible, setIsVisible] = useState(false);
+  
+  useEffect(() => {
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        setIsVisible(true);
+        observer.disconnect(); // Ne jouer qu'une seule fois
+      }
+    }, { threshold: 0.1 });
+    
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, []);
+  
+  return [ref, isVisible];
+}
 import './Landing.css';
 
 const FEATURES = [
@@ -27,8 +49,9 @@ const FEATURES = [
   },
   {
     icon: '🌐',
-    title: 'Multijoueur (Bientôt)',
+    title: 'Multijoueur',
     desc: 'Le multijoueur en ligne arrive prochainement. L\'architecture est déjà prête.',
+    comingSoon: true
   },
   {
     icon: '🏆',
@@ -47,6 +70,10 @@ const STEPS = [
 export default function Landing() {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
+  
+  const [featuresRef, featuresVisible] = useReveal();
+  const [stepsRef, stepsVisible] = useReveal();
+  const [ctaRef, ctaVisible] = useReveal();
 
   return (
     <div className="landing">
@@ -76,7 +103,7 @@ export default function Landing() {
             <p className="hero-subtitle">
               La première plateforme de Ludo avec mises réelles. 
               Affrontez l'IA ou vos amis et remportez jusqu'à 
-              <strong style={{color: 'var(--gold-primary)'}}> 4× votre mise.</strong>
+              <strong className="text-gold"> 4× votre mise.</strong>
             </p>
 
             <div className="hero-actions">
@@ -108,19 +135,10 @@ export default function Landing() {
               )}
             </div>
 
-            <div className="hero-stats">
-              <div className="hero-stat">
-                <span className="hero-stat-value">10K+</span>
-                <span className="hero-stat-label">Joueurs actifs</span>
-              </div>
-              <div className="hero-stat">
-                <span className="hero-stat-value">250K€</span>
-                <span className="hero-stat-label">Distribués</span>
-              </div>
-              <div className="hero-stat">
-                <span className="hero-stat-value">4.9⭐</span>
-                <span className="hero-stat-label">Note moyenne</span>
-              </div>
+            <div className="flex items-center justify-center gap-4 mt-3">
+              <span className="badge badge-gold">🎲 Certifié Équitable</span>
+              <span className="badge badge-gray">🔒 100% Sécurisé</span>
+              <span className="badge badge-gray">⚡ Multijoueur</span>
             </div>
           </div>
 
@@ -136,7 +154,11 @@ export default function Landing() {
       </section>
 
       {/* ===== FEATURES ===== */}
-      <section className="features" id="features">
+      <section 
+        className={`features ${featuresVisible ? 'animate-fade-in-up' : 'opacity-0'}`} 
+        id="features" 
+        ref={featuresRef}
+      >
         <div className="section-inner">
           <div className="section-header">
             <p className="section-label">Pourquoi GoldenLudo ?</p>
@@ -151,8 +173,8 @@ export default function Landing() {
                 <div className="feature-icon">{f.icon}</div>
                 <h3>{f.title}</h3>
                 <p>{f.desc}</p>
-                {f.title.includes('Bientôt') && (
-                  <span className="badge badge-gray" style={{marginTop: 'var(--space-3)'}}>
+                {f.comingSoon && (
+                  <span className="badge badge-gray mt-3">
                     Bientôt disponible
                   </span>
                 )}
@@ -163,7 +185,11 @@ export default function Landing() {
       </section>
 
       {/* ===== HOW IT WORKS ===== */}
-      <section className="how-it-works" id="how-it-works">
+      <section 
+        className={`how-it-works ${stepsVisible ? 'animate-fade-in-up' : 'opacity-0'}`} 
+        id="how-it-works"
+        ref={stepsRef}
+      >
         <div className="section-inner">
           <div className="section-header">
             <p className="section-label">Comment ça marche</p>
@@ -200,10 +226,13 @@ export default function Landing() {
       </section>
 
       {/* ===== CTA ===== */}
-      <section className="cta-section">
+      <section 
+        className={`cta-section ${ctaVisible ? 'animate-bounce-in' : 'opacity-0'}`}
+        ref={ctaRef}
+      >
         <div className="cta-bg" />
         <div className="cta-card">
-          <div className="hero-badge" style={{margin: '0 auto var(--space-6)'}}>
+          <div className="hero-badge mx-auto mb-6">
             {isAuthenticated ? '🎮 Prêt à jouer ?' : '🎁 Offre de lancement'}
           </div>
           <h2>
@@ -236,11 +265,18 @@ export default function Landing() {
             🎲 Golden<span>Ludo</span>
           </div>
           <div className="footer-links">
-            <span className="footer-link">Conditions d'utilisation</span>
-            <span className="footer-link">Jeu responsable</span>
-            <span className="footer-link">Contact</span>
+            <span className="footer-link" onClick={() => navigate('/legal')} role="button" tabIndex={0} onKeyDown={(e) => e.key==='Enter' && navigate('/legal')}>Conditions d'utilisation</span>
+            <span className="footer-link" onClick={() => navigate('/legal')} role="button" tabIndex={0} onKeyDown={(e) => e.key==='Enter' && navigate('/legal')}>Jeu responsable</span>
+            <span className="footer-link" onClick={() => navigate('/contact')} role="button" tabIndex={0} onKeyDown={(e) => e.key==='Enter' && navigate('/contact')}>Contact</span>
           </div>
-          <span className="footer-copy">© 2026 GoldenLudo. Tous droits réservés.</span>
+
+          <div className="legal-warning text-center mt-3" style={{ color: 'var(--text-muted)', fontSize: '0.75rem', lineHeight: '1.4', maxWidth: '800px', width: '100%', borderTop: '1px solid var(--border-subtle)', paddingTop: 'var(--space-4)' }}>
+            <p className="mb-2"><strong>🔞 Les jeux d'argent sont strictement interdits aux mineurs de moins de 18 ans.</strong></p>
+            <p className="mb-2">⚠️ Jouer comporte des risques : endettement, isolement, dépendance. Pour être aidé, appelez le 09-74-75-13-13 (appel non surtaxé) ou rendez-vous sur <a href="https://www.joueurs-info-service.fr" target="_blank" rel="noopener noreferrer" style={{textDecoration: 'underline'}}>joueurs-info-service.fr</a>.</p>
+            <p>L'accès aux services peut être restreint selon votre juridiction de résidence.</p>
+          </div>
+
+          <span className="footer-copy mt-3">© 2026 GoldenLudo. Tous droits réservés.</span>
         </div>
       </footer>
     </div>

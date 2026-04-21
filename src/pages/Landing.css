@@ -27,6 +27,20 @@
   border-radius: 50%;
   filter: blur(80px);
   opacity: 0.25;
+  will-change: transform;
+}
+
+@media (max-width: 768px) {
+  .hero-orb {
+    filter: blur(40px);
+    opacity: 0.15;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-orb {
+    display: none;
+  }
 }
 
 .hero-orb-1 {

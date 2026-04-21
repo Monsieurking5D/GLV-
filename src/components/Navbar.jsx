@@ -1,5 +1,5 @@
 // src/components/Navbar.jsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import './Navbar.css';
@@ -11,10 +11,25 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
-  const handleSignOut = () => {
-    signOut();
-    navigate('/');
-    setDropdownOpen(false);
+  // Fermer le menu mobile si on repasse sur un écran large
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth > 768 && menuOpen) {
+        setMenuOpen(false);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [menuOpen]);
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      navigate('/');
+      setDropdownOpen(false);
+    } catch (err) {
+      console.error('Erreur lors de la déconnexion', err);
+    }
   };
 
   const isActive = (path) => location.pathname === path;
@@ -23,7 +38,7 @@ export default function Navbar() {
     <nav className="navbar">
       <div className="navbar-inner">
         {/* Logo */}
-        <div className="navbar-logo" onClick={() => navigate('/')}>
+        <div className="navbar-logo" onClick={() => navigate('/')} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && navigate('/')} aria-label="Accueil">
           <div className="logo-icon">
             <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
               <rect width="40" height="40" rx="10" fill="url(#logoGrad)"/>
@@ -68,7 +83,7 @@ export default function Navbar() {
           {isAuthenticated ? (
             <>
               {/* Wallet */}
-              <div className="wallet-pill" onClick={() => navigate('/lobby')}>
+              <div className="wallet-pill" onClick={() => navigate('/lobby')} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && navigate('/lobby')} aria-label="Mon portefeuille">
                 <span className="wallet-icon">💰</span>
                 <span className="wallet-amount">
                   {(profile?.walletBalance || 0).toFixed(2)}€
@@ -98,10 +113,10 @@ export default function Navbar() {
                       <span>{profile?.email || user?.email}</span>
                     </div>
                     <div className="dropdown-divider" />
-                    <button className="dropdown-item" onClick={() => { navigate('/lobby'); setDropdownOpen(false); }}>
+                    <button className="dropdown-item" onClick={() => { navigate('/profile'); setDropdownOpen(false); }}>
                       🎮 Mon Profil
                     </button>
-                    <button className="dropdown-item" onClick={() => { navigate('/lobby'); setDropdownOpen(false); }}>
+                    <button className="dropdown-item" onClick={() => { navigate('/profile'); setDropdownOpen(false); }}>
                       📊 Statistiques
                     </button>
                     <div className="dropdown-divider" />

@@ -55,12 +55,14 @@ export function AuthProvider({ children }) {
 
     // 2. Écouter les changements (connexion, déconnexion)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user || null);
-      if (session?.user) {
-        fetchProfile(session.user.id);
-      } else {
-        setProfile(null);
-        setLoading(false);
+      if (_event === 'SIGNED_IN' || _event === 'SIGNED_OUT') {
+        setUser(session?.user || null);
+        if (session?.user) {
+          fetchProfile(session.user.id);
+        } else {
+          setProfile(null);
+          setLoading(false);
+        }
       }
     });
 
@@ -98,6 +100,9 @@ export function AuthProvider({ children }) {
   const updateProfile = async (updates) => {
     if (!user) return;
     
+    // Sauvegarde de l'état précédent pour rollback
+    const previousProfile = { ...profile };
+    
     // Mise à jour optimiste (locale)
     const newProfile = { ...profile, ...updates };
     setProfile(newProfile);
@@ -116,6 +121,7 @@ export function AuthProvider({ children }) {
       
       if (error) {
         console.error("Erreur lors de la mise à jour du profil:", error);
+        setProfile(previousProfile); // Rollback si erreur réseau ou DB
       }
     }
   };

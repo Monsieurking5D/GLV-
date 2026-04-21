@@ -58,7 +58,7 @@ BEGIN
     new.id,
     new.raw_user_meta_data->>'username', -- Récupéré depuis les options côté client
     new.email,
-    100 -- Le wallet démarre à 100€
+    0 -- Le wallet démarre à 0 (les 100€ sont crédités par la transaction de bienvenue déclenchant l'autre trigger)
   );
   
   -- Insert welcome transaction

@@ -3,9 +3,6 @@
    Premium Gold & Dark Theme
    ============================================= */
 
-/* --- Google Fonts --- */
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600&display=swap');
-
 /* --- CSS Variables --- */
 :root {
   /* Colors */
@@ -429,6 +426,12 @@ a { text-decoration: none; color: inherit; }
 .gap-4 { gap: var(--space-4); }
 .gap-6 { gap: var(--space-6); }
 .gap-8 { gap: var(--space-8); }
+
+.mt-3 { margin-top: var(--space-3); }
+.mb-6 { margin-bottom: var(--space-6); }
+.mx-auto { margin-left: auto; margin-right: auto; }
+.opacity-0 { opacity: 0; }
+.text-gold { color: var(--gold-primary); }
 
 .w-full { width: 100%; }
 .h-full { height: 100%; }

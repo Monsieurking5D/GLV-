@@ -45,8 +45,11 @@ export default function MiniBoardSVG() {
       viewBox={`0 0 ${SIZE} ${SIZE}`}
       width="100%"
       height="100%"
+      role="img"
+      aria-label="Plateau de Ludo interactif"
       style={{ background: '#0C0C22', display: 'block' }}
     >
+      <title>Plateau de Ludo interactif</title>
       {/* Board background */}
       <rect width={SIZE} height={SIZE} fill="#0C0C22" />
 
