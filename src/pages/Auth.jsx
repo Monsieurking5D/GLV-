@@ -1,8 +1,26 @@
 // src/pages/Auth.jsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
+import { supabase } from '../lib/supabase.js';
 import './Auth.css';
+
+// Mots de passe triviaux interdits
+const WEAK_PASSWORDS = ['123456', '123456789', 'password', 'password1', 'azerty', 'qwerty', '000000', 'abc123'];
+
+// Force du mot de passe : 0=vide, 1=faible, 2=moyen, 3=fort
+function getPasswordStrength(pwd) {
+  if (!pwd) return 0;
+  let score = 0;
+  if (pwd.length >= 8) score++;
+  if (pwd.length >= 12) score++;
+  if (/[A-Z]/.test(pwd) && /[a-z]/.test(pwd)) score++;
+  if (/[0-9]/.test(pwd)) score++;
+  if (/[^a-zA-Z0-9]/.test(pwd)) score++;
+  if (score <= 1) return 1;
+  if (score <= 3) return 2;
+  return 3;
+}
 
 export default function Auth() {
   const [searchParams] = useSearchParams();
@@ -11,8 +29,13 @@ export default function Auth() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState('');
+  const [resetSent, setResetSent] = useState(false);
+  const [showReset, setShowReset] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const isSubmitting = useRef(false); // guard anti double-clic
   const { signIn, signUp, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
@@ -23,6 +46,8 @@ export default function Auth() {
   useEffect(() => {
     setMode(searchParams.get('mode') || 'login');
     setError('');
+    setShowReset(false);
+    setResetSent(false);
   }, [searchParams]);
 
   const handleChange = (e) => {
@@ -44,55 +69,69 @@ export default function Auth() {
       return 'Adresse email invalide.';
     if (msg.includes('Email not confirmed'))
       return 'Vous devez confirmer votre email avant de vous connecter. Vérifiez votre boîte mail.';
-    if (msg.includes('Failed to fetch') || msg.includes('fetch'))
+    if (msg.includes('Failed to fetch') || msg.includes('NetworkError'))
       return 'Impossible de joindre le serveur. Vérifiez votre connexion internet.';
     return msg || 'Une erreur est survenue. Réessayez.';
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    // Guard anti double-clic : bloqué jusqu'au prochain rendu
+    if (isSubmitting.current) return;
+    isSubmitting.current = true;
     setError('');
     setLoading(true);
 
-    // Nettoyage des inputs avant traitement
     const email = formData.email.trim().toLowerCase();
     const username = formData.username.trim();
     const { password, confirmPassword } = formData;
 
     try {
       if (mode === 'register') {
-        // Validation username robuste sur la valeur nettoyée
-        if (!username || username.length < 3) {
-          throw new Error('Le nom d\'utilisateur doit faire au moins 3 caractères.');
-        }
-        if (username.length > 30) {
-          throw new Error('Le nom d\'utilisateur ne peut pas dépasser 30 caractères.');
-        }
-        if (!/^[a-zA-Z0-9_\-]+$/.test(username)) {
-          throw new Error('Le nom d\'utilisateur ne peut contenir que des lettres, chiffres, _ et -');
-        }
-        if (password.length < 6) {
-          throw new Error('Le mot de passe doit faire au moins 6 caractères.');
-        }
-        if (password !== confirmPassword) {
+        if (!username || username.length < 3)
+          throw new Error("Le nom d'utilisateur doit faire au moins 3 caractères.");
+        if (username.length > 30)
+          throw new Error("Le nom d'utilisateur ne peut pas dépasser 30 caractères.");
+        if (!/^[a-zA-Z0-9_\-]+$/.test(username))
+          throw new Error("Le nom d'utilisateur ne peut contenir que des lettres, chiffres, _ et -");
+        if (password.length < 8)
+          throw new Error('Le mot de passe doit faire au moins 8 caractères.');
+        if (WEAK_PASSWORDS.includes(password.toLowerCase()))
+          throw new Error('Ce mot de passe est trop courant. Choisissez-en un plus robuste.');
+        if (password !== confirmPassword)
           throw new Error('Les mots de passe ne correspondent pas.');
-        }
+
         const { session } = await signUp(email, password, username);
         if (!session) {
           setRegisteredEmail(email);
           setEmailSent(true);
           return;
         }
-        // session !== null → connecté directement (confirm email désactivé)
-        // La navigation est gérée par le useEffect isAuthenticated ci-dessus
+        // La navigation est gérée par le useEffect isAuthenticated
       } else {
         await signIn(email, password);
-        // La navigation vers /lobby est gérée par le useEffect isAuthenticated
+        // La navigation est gérée par le useEffect isAuthenticated
       }
     } catch (err) {
       setError(translateError(err.message));
     } finally {
       setLoading(false);
+      isSubmitting.current = false;
+    }
+  };
+
+  const handlePasswordReset = async (e) => {
+    e.preventDefault();
+    if (!resetEmail.trim()) return;
+    setLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(resetEmail.trim().toLowerCase(), {
+      redirectTo: `${window.location.origin}/auth?mode=login`,
+    });
+    setLoading(false);
+    if (error) {
+      setError(translateError(error.message));
+    } else {
+      setResetSent(true);
     }
   };
 
@@ -102,6 +141,10 @@ export default function Auth() {
     setFormData({ email: '', password: '', username: '', confirmPassword: '' });
     setError('');
   };
+
+  const pwdStrength = getPasswordStrength(formData.password);
+  const strengthLabel = ['', 'Faible', 'Moyen', 'Fort'];
+  const strengthColor = ['', '#EF4444', '#F59E0B', '#10B981'];
 
   // ── Écran "Vérifiez vos emails" ──────────────────────────────────────────
   if (emailSent) {
@@ -117,21 +160,91 @@ export default function Auth() {
             <h1 style={{ fontSize: 'var(--text-2xl)', marginBottom: 'var(--space-3)' }}>
               Vérifiez vos emails !
             </h1>
-            <p style={{ marginBottom: 'var(--space-6)' }}>
+            <p style={{ marginBottom: 'var(--space-4)' }}>
               Un lien de confirmation a été envoyé à{' '}
               <strong style={{ color: 'var(--gold-primary)' }}>{registeredEmail}</strong>.
-              <br /><br />
+            </p>
+            <p style={{ marginBottom: 'var(--space-6)' }}>
               Cliquez sur le lien dans l'email pour activer votre compte et recevoir vos <strong>100€ de bonus</strong> 🎁
             </p>
             <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)', marginBottom: 'var(--space-6)' }}>
-              Pensez à vérifier vos spams si vous ne recevez rien dans quelques minutes.
+              💡 Pensez à vérifier vos spams si vous ne recevez rien dans quelques minutes.
             </p>
-            <button
-              className="btn btn-ghost w-full"
-              onClick={() => navigate('/auth?mode=login')}
-            >
+            <button className="btn btn-ghost w-full" onClick={() => navigate('/auth?mode=login')}>
               Retour à la connexion
             </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Écran "Mot de passe oublié" ───────────────────────────────────────────
+  if (showReset) {
+    return (
+      <div className="auth-page">
+        <div className="auth-bg">
+          <div className="auth-orb auth-orb-1" />
+          <div className="auth-orb auth-orb-2" />
+        </div>
+        <div className="auth-container">
+          <button
+            className="auth-logo"
+            onClick={() => navigate('/')}
+            aria-label="Retour à l'accueil"
+          >
+            <span className="auth-logo-icon">🎲</span>
+            <span className="auth-logo-text">Golden<span>Ludo</span></span>
+          </button>
+          <div className="auth-card animate-fade-in-up" style={{ textAlign: 'center' }}>
+            {resetSent ? (
+              <>
+                <div style={{ fontSize: '3rem', marginBottom: 'var(--space-4)' }}>✅</div>
+                <h1 style={{ fontSize: 'var(--text-2xl)', marginBottom: 'var(--space-3)' }}>Email envoyé !</h1>
+                <p style={{ marginBottom: 'var(--space-6)' }}>
+                  Si un compte existe pour <strong style={{ color: 'var(--gold-primary)' }}>{resetEmail}</strong>, vous recevrez un lien de réinitialisation.
+                </p>
+                <button className="btn btn-ghost w-full" onClick={() => navigate('/auth?mode=login')}>
+                  Retour à la connexion
+                </button>
+              </>
+            ) : (
+              <>
+                <h1 style={{ fontSize: 'var(--text-2xl)', marginBottom: 'var(--space-3)' }}>
+                  Mot de passe oublié ?
+                </h1>
+                <p style={{ marginBottom: 'var(--space-6)' }}>
+                  Entrez votre adresse email et nous vous enverrons un lien de réinitialisation.
+                </p>
+                {error && <div className="auth-error" role="alert">⚠️ {error}</div>}
+                <form onSubmit={handlePasswordReset} style={{ textAlign: 'left' }}>
+                  <div className="input-group" style={{ marginBottom: 'var(--space-4)' }}>
+                    <label htmlFor="reset-email">Adresse email</label>
+                    <input
+                      id="reset-email"
+                      type="email"
+                      className="input"
+                      placeholder="vous@exemple.com"
+                      value={resetEmail}
+                      onChange={e => setResetEmail(e.target.value)}
+                      required
+                      autoFocus
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    className="btn btn-gold w-full"
+                    style={{ height: 52, fontSize: 'var(--text-lg)', marginBottom: 'var(--space-3)' }}
+                    disabled={loading}
+                  >
+                    {loading ? 'Envoi...' : '📧 Envoyer le lien'}
+                  </button>
+                  <button type="button" className="btn btn-ghost w-full" onClick={() => setShowReset(false)}>
+                    Annuler
+                  </button>
+                </form>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -148,11 +261,15 @@ export default function Auth() {
       </div>
 
       <div className="auth-container">
-        {/* Logo */}
-        <div className="auth-logo" onClick={() => navigate('/')}>
+        {/* Logo — sémantique button pour accessibilité clavier */}
+        <button
+          className="auth-logo"
+          onClick={() => navigate('/')}
+          aria-label="Retour à l'accueil GoldenLudo"
+        >
           <span className="auth-logo-icon">🎲</span>
           <span className="auth-logo-text">Golden<span>Ludo</span></span>
-        </div>
+        </button>
 
         {/* Card */}
         <div className="auth-card animate-fade-in-up">
@@ -179,7 +296,7 @@ export default function Auth() {
           )}
 
           {/* Form */}
-          <form className="auth-form" onSubmit={handleSubmit} id="auth-form">
+          <form className="auth-form" onSubmit={handleSubmit} id="auth-form" aria-describedby={error ? 'auth-error-msg' : undefined}>
             {mode === 'register' && (
               <div className="input-group">
                 <label htmlFor="username">Nom d'utilisateur</label>
@@ -193,6 +310,7 @@ export default function Auth() {
                   onChange={handleChange}
                   required
                   minLength={3}
+                  maxLength={30}
                   autoComplete="username"
                 />
               </div>
@@ -221,11 +339,11 @@ export default function Auth() {
                   name="password"
                   type={showPassword ? 'text' : 'password'}
                   className="input"
-                  placeholder={mode === 'register' ? 'Minimum 6 caractères' : '••••••••'}
+                  placeholder={mode === 'register' ? 'Minimum 8 caractères' : '••••••••'}
                   value={formData.password}
                   onChange={handleChange}
                   required
-                  minLength={6}
+                  minLength={mode === 'register' ? 8 : 6}
                   autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
                 />
                 <button
@@ -233,32 +351,61 @@ export default function Auth() {
                   className="password-toggle"
                   onClick={() => setShowPassword(!showPassword)}
                   tabIndex={-1}
+                  aria-label={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
                 >
                   {showPassword ? '🙈' : '👁️'}
                 </button>
               </div>
+              {/* Indicateur de force du mot de passe */}
+              {mode === 'register' && formData.password && (
+                <div style={{ marginTop: 6 }}>
+                  <div style={{ display: 'flex', gap: 4, marginBottom: 3 }}>
+                    {[1, 2, 3].map(i => (
+                      <div key={i} style={{
+                        flex: 1, height: 3, borderRadius: 2,
+                        background: i <= pwdStrength ? strengthColor[pwdStrength] : 'var(--border-subtle)',
+                        transition: 'background 0.3s'
+                      }} />
+                    ))}
+                  </div>
+                  <span style={{ fontSize: 'var(--text-xs)', color: strengthColor[pwdStrength] }}>
+                    Force : {strengthLabel[pwdStrength]}
+                  </span>
+                </div>
+              )}
             </div>
 
             {mode === 'register' && (
               <div className="input-group">
                 <label htmlFor="confirmPassword">Confirmer le mot de passe</label>
-                <input
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  type="password"
-                  className="input"
-                  placeholder="••••••••"
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  required
-                  autoComplete="new-password"
-                />
+                <div className="password-wrapper">
+                  <input
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    className="input"
+                    placeholder="••••••••"
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    required
+                    autoComplete="new-password"
+                  />
+                  <button
+                    type="button"
+                    className="password-toggle"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    tabIndex={-1}
+                    aria-label={showConfirmPassword ? 'Masquer' : 'Afficher la confirmation'}
+                  >
+                    {showConfirmPassword ? '🙈' : '👁️'}
+                  </button>
+                </div>
               </div>
             )}
 
-            {/* Error */}
+            {/* Error — lié au formulaire via aria-describedby */}
             {error && (
-              <div className="auth-error">
+              <div className="auth-error" id="auth-error-msg" role="alert" aria-live="assertive">
                 ⚠️ {error}
               </div>
             )}
@@ -282,6 +429,18 @@ export default function Auth() {
             </button>
           </form>
 
+          {/* Mot de passe oublié (login only) */}
+          {mode === 'login' && (
+            <div style={{ textAlign: 'center', marginTop: 'var(--space-3)' }}>
+              <button
+                className="auth-link"
+                onClick={() => { setShowReset(true); setResetEmail(formData.email); setError(''); }}
+              >
+                Mot de passe oublié ?
+              </button>
+            </div>
+          )}
+
           {/* Mode switch */}
           <div className="auth-switch">
             {mode === 'login' ? (
@@ -300,20 +459,13 @@ export default function Auth() {
               </>
             )}
           </div>
-
-          {/* Demo credentials */}
-          {mode === 'login' && (
-            <div className="demo-hint">
-              <p>💡 Compte démo disponible après inscription</p>
-            </div>
-          )}
         </div>
 
         <p className="auth-disclaimer">
           En vous inscrivant, vous acceptez nos{' '}
-          <span className="auth-link-inline">Conditions d'utilisation</span>{' '}
+          <button className="auth-link-inline" onClick={() => navigate('/legal')}>Conditions d'utilisation</button>{' '}
           et notre politique de{' '}
-          <span className="auth-link-inline">Jeu responsable</span>.
+          <button className="auth-link-inline" onClick={() => navigate('/legal')}>Jeu responsable</button>.
         </p>
       </div>
     </div>
