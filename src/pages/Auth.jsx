@@ -30,37 +30,67 @@ export default function Auth() {
     setError('');
   };
 
+  // Table de traduction des messages d'erreur Supabase
+  const translateError = (msg = '') => {
+    if (msg.includes('User already registered') || msg.includes('already registered'))
+      return 'Un compte existe déjà avec cette adresse email. Connectez-vous !';
+    if (msg.includes('Invalid login credentials') || msg.includes('invalid_credentials'))
+      return 'Email ou mot de passe incorrect.';
+    if (msg.includes('Email rate limit exceeded') || msg.includes('rate limit'))
+      return 'Trop de tentatives. Veuillez patienter quelques minutes.';
+    if (msg.includes('Password should be at least'))
+      return 'Le mot de passe doit contenir au moins 6 caractères.';
+    if (msg.includes('Unable to validate email address'))
+      return 'Adresse email invalide.';
+    if (msg.includes('Email not confirmed'))
+      return 'Vous devez confirmer votre email avant de vous connecter. Vérifiez votre boîte mail.';
+    if (msg.includes('Failed to fetch') || msg.includes('fetch'))
+      return 'Impossible de joindre le serveur. Vérifiez votre connexion internet.';
+    return msg || 'Une erreur est survenue. Réessayez.';
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
+    // Nettoyage des inputs avant traitement
+    const email = formData.email.trim().toLowerCase();
+    const username = formData.username.trim();
+    const { password, confirmPassword } = formData;
+
     try {
       if (mode === 'register') {
-        if (!formData.username.trim() || formData.username.length < 3) {
+        // Validation username robuste sur la valeur nettoyée
+        if (!username || username.length < 3) {
           throw new Error('Le nom d\'utilisateur doit faire au moins 3 caractères.');
         }
-        if (formData.password.length < 6) {
+        if (username.length > 30) {
+          throw new Error('Le nom d\'utilisateur ne peut pas dépasser 30 caractères.');
+        }
+        if (!/^[a-zA-Z0-9_\-]+$/.test(username)) {
+          throw new Error('Le nom d\'utilisateur ne peut contenir que des lettres, chiffres, _ et -');
+        }
+        if (password.length < 6) {
           throw new Error('Le mot de passe doit faire au moins 6 caractères.');
         }
-        if (formData.password !== formData.confirmPassword) {
+        if (password !== confirmPassword) {
           throw new Error('Les mots de passe ne correspondent pas.');
         }
-        const { session } = await signUp(formData.email, formData.password, formData.username);
+        const { session } = await signUp(email, password, username);
         if (!session) {
-          // Email de confirmation requis — afficher un message à l'utilisateur
-          setRegisteredEmail(formData.email);
+          setRegisteredEmail(email);
           setEmailSent(true);
-          return; // Ne pas rediriger vers /lobby
+          return;
         }
         // session !== null → connecté directement (confirm email désactivé)
-        navigate('/lobby');
+        // La navigation est gérée par le useEffect isAuthenticated ci-dessus
       } else {
-        await signIn(formData.email, formData.password);
-        navigate('/lobby');
+        await signIn(email, password);
+        // La navigation vers /lobby est gérée par le useEffect isAuthenticated
       }
     } catch (err) {
-      setError(err.message || 'Une erreur est survenue.');
+      setError(translateError(err.message));
     } finally {
       setLoading(false);
     }
