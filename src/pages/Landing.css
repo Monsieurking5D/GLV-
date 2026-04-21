@@ -145,30 +145,7 @@
   flex-wrap: wrap;
 }
 
-.hero-stats {
-  display: flex;
-  gap: var(--space-6);
-  padding-top: var(--space-6);
-  border-top: 1px solid var(--border-subtle);
-}
 
-.hero-stat {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.hero-stat-value {
-  font-family: 'Outfit', sans-serif;
-  font-size: var(--text-2xl);
-  font-weight: 800;
-  color: var(--gold-primary);
-}
-
-.hero-stat-label {
-  font-size: var(--text-sm);
-  color: var(--text-muted);
-}
 
 /* Mini Board Visual */
 .hero-visual {
@@ -436,6 +413,16 @@
 .footer-copy {
   color: var(--text-muted);
   font-size: var(--text-xs);
+}
+
+.legal-warning {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  line-height: 1.4;
+  max-width: 800px;
+  width: 100%;
+  border-top: 1px solid var(--border-subtle);
+  padding-top: var(--space-4);
 }
 
 /* Responsive */

@@ -116,7 +116,7 @@ export default function Navbar() {
                     <button className="dropdown-item" onClick={() => { navigate('/profile'); setDropdownOpen(false); }}>
                       🎮 Mon Profil
                     </button>
-                    <button className="dropdown-item" onClick={() => { navigate('/profile'); setDropdownOpen(false); }}>
+                    <button className="dropdown-item" onClick={() => { navigate('/stats'); setDropdownOpen(false); }}>
                       📊 Statistiques
                     </button>
                     <div className="dropdown-divider" />

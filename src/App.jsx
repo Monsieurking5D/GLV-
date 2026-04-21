@@ -7,6 +7,10 @@ import Auth from './pages/Auth.jsx';
 import Lobby from './pages/Lobby.jsx';
 import Game from './pages/Game.jsx';
 import Leaderboard from './pages/Leaderboard.jsx';
+import Legal from './pages/Legal.jsx';
+import Contact from './pages/Contact.jsx';
+import Profile from './pages/Profile.jsx';
+import Stats from './pages/Stats.jsx';
 
 function PrivateRoute({ children }) {
   const { isAuthenticated, loading } = useAuth();
@@ -41,6 +45,8 @@ function AppRoutes() {
       <Navbar />
       <Routes>
         <Route path="/" element={<Landing />} />
+        <Route path="/legal" element={<Legal />} />
+        <Route path="/contact" element={<Contact />} />
         <Route
           path="/auth"
           element={isAuthenticated ? <Navigate to="/lobby" replace /> : <Auth />}
@@ -58,6 +64,22 @@ function AppRoutes() {
           element={
             <PrivateRoute>
               <Game />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <PrivateRoute>
+              <Profile />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/stats"
+          element={
+            <PrivateRoute>
+              <Stats />
             </PrivateRoute>
           }
         />

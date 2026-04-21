@@ -24,7 +24,6 @@ function useReveal() {
   
   return [ref, isVisible];
 }
-import './Landing.css';
 
 const FEATURES = [
   {
@@ -73,6 +72,7 @@ export default function Landing() {
   
   const [featuresRef, featuresVisible] = useReveal();
   const [stepsRef, stepsVisible] = useReveal();
+  const [betsRef, betsVisible] = useReveal();
   const [ctaRef, ctaVisible] = useReveal();
 
   return (
@@ -211,7 +211,11 @@ export default function Landing() {
       </section>
 
       {/* ===== BET AMOUNTS ===== */}
-      <section className="bet-section" id="bets">
+      <section 
+        className={`bet-section ${betsVisible ? 'animate-fade-in-up' : 'opacity-0'}`} 
+        id="bets"
+        ref={betsRef}
+      >
         <div className="section-inner">
           <div className="section-header">
             <p className="section-label">Mises disponibles</p>
@@ -227,7 +231,7 @@ export default function Landing() {
 
       {/* ===== CTA ===== */}
       <section 
-        className={`cta-section ${ctaVisible ? 'animate-bounce-in' : 'opacity-0'}`}
+        className={`cta-section ${ctaVisible ? 'animate-fade-in-up' : 'opacity-0'}`}
         ref={ctaRef}
       >
         <div className="cta-bg" />
@@ -270,7 +274,7 @@ export default function Landing() {
             <span className="footer-link" onClick={() => navigate('/contact')} role="button" tabIndex={0} onKeyDown={(e) => e.key==='Enter' && navigate('/contact')}>Contact</span>
           </div>
 
-          <div className="legal-warning text-center mt-3" style={{ color: 'var(--text-muted)', fontSize: '0.75rem', lineHeight: '1.4', maxWidth: '800px', width: '100%', borderTop: '1px solid var(--border-subtle)', paddingTop: 'var(--space-4)' }}>
+          <div className="legal-warning text-center mt-3">
             <p className="mb-2"><strong>🔞 Les jeux d'argent sont strictement interdits aux mineurs de moins de 18 ans.</strong></p>
             <p className="mb-2">⚠️ Jouer comporte des risques : endettement, isolement, dépendance. Pour être aidé, appelez le 09-74-75-13-13 (appel non surtaxé) ou rendez-vous sur <a href="https://www.joueurs-info-service.fr" target="_blank" rel="noopener noreferrer" style={{textDecoration: 'underline'}}>joueurs-info-service.fr</a>.</p>
             <p>L'accès aux services peut être restreint selon votre juridiction de résidence.</p>

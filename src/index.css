@@ -428,6 +428,7 @@ a { text-decoration: none; color: inherit; }
 .gap-8 { gap: var(--space-8); }
 
 .mt-3 { margin-top: var(--space-3); }
+.mb-2 { margin-bottom: var(--space-2); }
 .mb-6 { margin-bottom: var(--space-6); }
 .mx-auto { margin-left: auto; margin-right: auto; }
 .opacity-0 { opacity: 0; }
@@ -531,9 +532,13 @@ a { text-decoration: none; color: inherit; }
 /* --- Accessibility --- */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+    animation: none !important;
+    transition: none !important;
     scroll-behavior: auto !important;
+  }
+
+  /* Force la visibilité immédiate pour empêcher le flash ou l'attente du scroll */
+  .opacity-0 {
+    opacity: 1 !important;
   }
 }
