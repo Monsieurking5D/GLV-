@@ -60,11 +60,7 @@ BEGIN
   INSERT INTO public.profiles (id, username, email, wallet_balance)
   VALUES (
     new.id,
-    COALESCE(
-      new.raw_user_meta_data->>'username', 
-      split_part(new.email, '@', 1), 
-      'player_' || left(new.id::text, 5)
-    ),
+    COALESCE(new.raw_user_meta_data->>'username', split_part(new.email, '@', 1)) || '_' || left(new.id::text, 4),
     new.email,
     0 -- Le wallet démarre à 0 (les 100€ sont crédités par la transaction ci-dessous)
   );
