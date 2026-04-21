@@ -8,16 +8,27 @@ export function AuthProvider({ children }) {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Fonction pour récupérer le profil et historique des transactions depuis Supabase
-  const fetchProfile = async (userId) => {
+  // Fetch with retry — le trigger SQL peut être en retard de quelques ms
+  const fetchProfile = async (userId, attempt = 1) => {
+    const MAX_ATTEMPTS = 5;
+    const DELAY_MS = [0, 300, 700, 1500, 3000]; // backoff progressif
+
     try {
       const { data: userProfile, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single();
-      
-      if (profileError) throw profileError;
+
+      if (profileError) {
+        // PGRST116 = "No rows found" → le trigger n'a pas encore créé la ligne
+        const isNotFound = profileError.code === 'PGRST116';
+        if (isNotFound && attempt < MAX_ATTEMPTS) {
+          await new Promise(r => setTimeout(r, DELAY_MS[attempt]));
+          return fetchProfile(userId, attempt + 1);
+        }
+        throw profileError;
+      }
 
       const { data: transactions, error: txError } = await supabase
         .from('transactions')
@@ -27,7 +38,6 @@ export function AuthProvider({ children }) {
 
       if (txError) throw txError;
 
-      // Adapter les noms de colonnes SQL (snake_case) vers le camelCase utilisé dans le front-end
       setProfile({
         ...userProfile,
         walletBalance: userProfile.wallet_balance,
