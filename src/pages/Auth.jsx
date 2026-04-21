@@ -11,6 +11,8 @@ export default function Auth() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState('');
   const { signIn, signUp, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
@@ -44,11 +46,19 @@ export default function Auth() {
         if (formData.password !== formData.confirmPassword) {
           throw new Error('Les mots de passe ne correspondent pas.');
         }
-        await signUp(formData.email, formData.password, formData.username);
+        const { session } = await signUp(formData.email, formData.password, formData.username);
+        if (!session) {
+          // Email de confirmation requis — afficher un message à l'utilisateur
+          setRegisteredEmail(formData.email);
+          setEmailSent(true);
+          return; // Ne pas rediriger vers /lobby
+        }
+        // session !== null → connecté directement (confirm email désactivé)
+        navigate('/lobby');
       } else {
         await signIn(formData.email, formData.password);
+        navigate('/lobby');
       }
-      navigate('/lobby');
     } catch (err) {
       setError(err.message || 'Une erreur est survenue.');
     } finally {
@@ -62,6 +72,41 @@ export default function Auth() {
     setFormData({ email: '', password: '', username: '', confirmPassword: '' });
     setError('');
   };
+
+  // ── Écran "Vérifiez vos emails" ──────────────────────────────────────────
+  if (emailSent) {
+    return (
+      <div className="auth-page">
+        <div className="auth-bg">
+          <div className="auth-orb auth-orb-1" />
+          <div className="auth-orb auth-orb-2" />
+        </div>
+        <div className="auth-container">
+          <div className="auth-card animate-fade-in-up" style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '3rem', marginBottom: 'var(--space-4)' }}>📧</div>
+            <h1 style={{ fontSize: 'var(--text-2xl)', marginBottom: 'var(--space-3)' }}>
+              Vérifiez vos emails !
+            </h1>
+            <p style={{ marginBottom: 'var(--space-6)' }}>
+              Un lien de confirmation a été envoyé à{' '}
+              <strong style={{ color: 'var(--gold-primary)' }}>{registeredEmail}</strong>.
+              <br /><br />
+              Cliquez sur le lien dans l'email pour activer votre compte et recevoir vos <strong>100€ de bonus</strong> 🎁
+            </p>
+            <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)', marginBottom: 'var(--space-6)' }}>
+              Pensez à vérifier vos spams si vous ne recevez rien dans quelques minutes.
+            </p>
+            <button
+              className="btn btn-ghost w-full"
+              onClick={() => navigate('/auth?mode=login')}
+            >
+              Retour à la connexion
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="auth-page">

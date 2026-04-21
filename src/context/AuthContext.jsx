@@ -80,7 +80,9 @@ export function AuthProvider({ children }) {
       }
     });
     if (error) throw error;
-    return { user: data.user, profile: null };
+    // data.session === null → email de confirmation envoyé par Supabase
+    // data.session !== null → Confirm email désactivé, connecté directement
+    return { user: data.user, session: data.session };
   };
 
   const signIn = async (email, password) => {
