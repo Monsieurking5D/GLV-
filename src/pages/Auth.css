@@ -19,7 +19,9 @@
 .auth-orb {
   position: absolute;
   border-radius: 50%;
-  filter: blur(80px);
+  filter: blur(60px); /* Réduit légèrement pour performance */
+  will-change: transform, filter;
+  pointer-events: none;
 }
 
 .auth-orb-1 {
