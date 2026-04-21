@@ -84,6 +84,7 @@ export function AuthProvider({ children }) {
       email,
       password,
       options: {
+        emailRedirectTo: window.location.origin,
         data: {
           username: username, // Passé aux meta-données, lu par notre Trigger SQL
         }
