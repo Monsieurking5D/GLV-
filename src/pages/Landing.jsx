@@ -60,7 +60,7 @@ const FEATURES = [
 ];
 
 const STEPS = [
-  { num: '1', title: "S'inscrire", desc: "Créez votre compte en 30 secondes et recevez 100€ de bonus." },
+  { num: '1', title: "S'inscrire", desc: "Créez votre compte en 30 secondes et recevez 5€ de bonus." },
   { num: '2', title: "Choisir une mise", desc: "Sélectionnez votre mise et le mode de jeu." },
   { num: '3', title: "Jouer", desc: "Lancez les dés, déplacez vos pions, capturez vos adversaires." },
   { num: '4', title: "Gagner", desc: "Le gagnant remporte tout le pot. Les gains s'ajoutent à votre portefeuille." },
@@ -243,7 +243,7 @@ export default function Landing() {
             {isAuthenticated ? (
               <>Plongez dans l'<span className="text-gradient-gold">Action</span><br />dès maintenant</>
             ) : (
-              <>Recevez <span className="text-gradient-gold">100€ offerts</span><br />à l'inscription</>
+              <>Recevez <span className="text-gradient-gold">5€ offerts</span><br />à l'inscription</>
             )}
           </h2>
           <p>

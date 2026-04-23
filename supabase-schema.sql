@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS public.transactions (
   type TEXT NOT NULL, -- 'deposit', 'win', 'bet', 'withdraw'
   description TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  CONSTRAINT check_transaction_type CHECK (type IN ('deposit', 'win', 'bet', 'withdraw'))
+  CONSTRAINT check_transaction_type CHECK (type IN ('deposit', 'win', 'bet', 'withdraw', 'loss'))
 );
 
 -- 3. Sécurisation : Activer RLS (Row Level Security)

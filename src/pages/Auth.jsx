@@ -348,7 +348,24 @@ export default function Auth() {
         if (password !== confirmPassword) throw new Error('Les mots de passe ne correspondent pas.');
         if (WEAK_PASSWORDS.includes(password.toLowerCase())) throw new Error('Mot de passe trop simple.');
 
-        const { session } = await signUp(cleanEmail, password, cleanUsername, referralCode.trim());
+        // Vérification du code de parrainage (pseudo du parrain)
+        const cleanReferral = referralCode.trim();
+        if (cleanReferral) {
+          const { data: refData, error: refError } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('username', cleanReferral)
+            .single();
+          
+          if (refError || !refData) {
+            throw new Error(`Le code de parrainage "${cleanReferral}" n'existe pas.`);
+          }
+          if (cleanReferral === cleanUsername) {
+            throw new Error("Vous ne pouvez pas vous parrainer vous-même.");
+          }
+        }
+
+        const { session } = await signUp(cleanEmail, password, cleanUsername, cleanReferral);
         if (!session) { setEmailSent(true); return; }
       } else {
         await signIn(cleanEmail, password);
