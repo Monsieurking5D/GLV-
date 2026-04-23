@@ -127,12 +127,12 @@ export default function Game() {
     if (bet > 0) {
       try {
         if (winnerColor === 'red') {
-          // Victoire: Gains = Pot (nb players * mise) - commission 5%
-          const winnings = bet * gameState.players.length * 0.95;
+          // Victoire: Gains nets = (Pot total * 0.95) - mise initiale
+          const winnings = (bet * gameState.players.length * 0.95) - bet;
           await addTransaction({
             type: 'win',
             amount: winnings,
-            description: `🏆 Victoire ! Gains de partie ${mode}`,
+            description: `🏆 Victoire ! Gains nets de partie ${mode}`,
           });
           await updateProfile({
             gamesPlayed: (profile?.gamesPlayed || 0) + 1,
