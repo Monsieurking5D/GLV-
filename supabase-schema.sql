@@ -7,7 +7,8 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   username TEXT UNIQUE NOT NULL,
   email TEXT NOT NULL,
   avatar_url TEXT,
-  wallet_balance NUMERIC DEFAULT 100, -- Solde initial (bonus)
+  wallet_balance NUMERIC DEFAULT 0, -- Le solde réel est géré par les transactions
+  referred_by UUID REFERENCES public.profiles(id), -- Qui a parrainé cet utilisateur
   games_played INTEGER DEFAULT 0,
   games_won INTEGER DEFAULT 0,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -52,27 +53,39 @@ CREATE POLICY "Les utilisateurs peuvent inserer des transactions"
 ON public.transactions FOR INSERT
 WITH CHECK ( auth.uid() = user_id );
 
--- 5. Trigger d'inscription (Gestion robuste des pseudos et bonus)
+-- 5. Trigger d'inscription (Gestion robuste des pseudos, parrainage et bonus)
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger AS $$
+DECLARE
+  referrer_id UUID;
+  referrer_username TEXT;
 BEGIN
-  -- Insert into profiles with fallback username
-  INSERT INTO public.profiles (id, username, email, wallet_balance)
+  -- 1. Récupérer le code de parrainage (pseudo du parrain) depuis les métadonnées
+  referrer_username := new.raw_user_meta_data->>'referral_code';
+  
+  IF referrer_username IS NOT NULL THEN
+    SELECT id INTO referrer_id FROM public.profiles WHERE username = referrer_username;
+  END IF;
+
+  -- 2. Création du profil
+  INSERT INTO public.profiles (id, username, email, wallet_balance, referred_by)
   VALUES (
     new.id,
     COALESCE(new.raw_user_meta_data->>'username', 'Joueur_' || left(new.id::text, 5)),
     new.email,
-    0 -- Le wallet démarre à 0 (les 100€ sont crédités par la transaction ci-dessous)
+    0,
+    referrer_id
   );
   
-  -- Insert welcome transaction (déclenche le trigger de mise à jour du solde)
+  -- 3. Créditer le bonus de bienvenue (5€)
   INSERT INTO public.transactions (user_id, amount, type, description)
-  VALUES (
-    new.id,
-    100,
-    'deposit',
-    '🎁 Bonus de bienvenue'
-  );
+  VALUES (new.id, 5, 'deposit', '🎁 Bonus de bienvenue');
+  
+  -- 4. Créditer le bonus de parrainage (5€) au parrain s'il existe
+  IF referrer_id IS NOT NULL THEN
+    INSERT INTO public.transactions (user_id, amount, type, description)
+    VALUES (referrer_id, 5, 'deposit', '🤝 Bonus parrainage (Nouveau joueur: ' || COALESCE(new.raw_user_meta_data->>'username', 'Inconnu') || ')');
+  END IF;
   
   RETURN new;
 END;

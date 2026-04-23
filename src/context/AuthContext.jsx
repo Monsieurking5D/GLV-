@@ -89,7 +89,7 @@ export function AuthProvider({ children }) {
     return `${url}/auth?mode=login`;
   };
 
-  const signUp = async (email, password, username) => {
+  const signUp = async (email, password, username, referralCode = '') => {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -97,6 +97,7 @@ export function AuthProvider({ children }) {
         emailRedirectTo: getRedirectUrl(),
         data: {
           username: username, // Passé aux meta-données, lu par notre Trigger SQL
+          referral_code: referralCode // Ajout du code de parrainage
         }
       }
     });

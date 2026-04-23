@@ -51,7 +51,7 @@ const VerificationScreen = React.memo(({ email, onBack }) => (
       Un lien de confirmation a été envoyé à <strong style={{ color: 'var(--gold-primary)' }}>{email}</strong>.
     </p>
     <p style={{ marginBottom: 'var(--space-6)' }}>
-      Cliquez sur le lien pour activer votre compte et recevoir vos <strong>100€ de bonus</strong> 🎁
+      Cliquez sur le lien pour activer votre compte et recevoir vos <strong>5€ de bonus</strong> 🎁
     </p>
     <button className="btn btn-ghost w-full" onClick={onBack}>Retour à la connexion</button>
   </div>
@@ -192,8 +192,8 @@ const LoginForm = React.memo(({ email, password, onEmailChange, onPasswordChange
 
 /** Formulaire d'inscription */
 const RegisterForm = React.memo(({ 
-  username, email, password, confirmPassword,
-  onUsernameChange, onEmailChange, onPasswordChange, onConfirmPasswordChange,
+  username, email, password, confirmPassword, referralCode,
+  onUsernameChange, onEmailChange, onPasswordChange, onConfirmPasswordChange, onReferralCodeChange,
   showPassword, showConfirmPassword, onTogglePassword, loading 
 }) => {
   const strength = useMemo(() => getPasswordStrength(password), [password]);
@@ -258,6 +258,13 @@ const RegisterForm = React.memo(({
           </button>
         </div>
       </div>
+      <div className="input-group">
+        <label htmlFor="referralCode">Code de parrainage (Optionnel)</label>
+        <input 
+          id="referralCode" name="referralCode" type="text" className="input" placeholder="Pseudo du parrain"
+          value={referralCode} onChange={(e) => onReferralCodeChange(e.target.value)}
+        />
+      </div>
     </>
   );
 });
@@ -273,6 +280,7 @@ export default function Auth() {
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [referralCode, setReferralCode] = useState('');
 
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -318,6 +326,7 @@ export default function Auth() {
   const handlePasswordChange = useCallback((val) => { setPassword(val); if (error) setError(''); }, [error]);
   const handleUsernameChange = useCallback((val) => { setUsername(val); if (error) setError(''); }, [error]);
   const handleConfirmPasswordChange = useCallback((val) => { setConfirmPassword(val); if (error) setError(''); }, [error]);
+  const handleReferralCodeChange = useCallback((val) => { setReferralCode(val); if (error) setError(''); }, [error]);
 
   const toggleVisibility = useCallback((type) => {
     if (type === 'pwd') setShowPassword(v => !v);
@@ -339,7 +348,7 @@ export default function Auth() {
         if (password !== confirmPassword) throw new Error('Les mots de passe ne correspondent pas.');
         if (WEAK_PASSWORDS.includes(password.toLowerCase())) throw new Error('Mot de passe trop simple.');
 
-        const { session } = await signUp(cleanEmail, password, cleanUsername);
+        const { session } = await signUp(cleanEmail, password, cleanUsername, referralCode.trim());
         if (!session) { setEmailSent(true); return; }
       } else {
         await signIn(cleanEmail, password);
@@ -430,7 +439,7 @@ export default function Auth() {
           <div className="auth-card animate-fade-in-up">
             <div className="auth-card-header">
               <h1>{mode === 'login' ? 'Bon retour !' : 'Rejoindre l\'aventure'}</h1>
-              <p>{mode === 'login' ? 'Connectez-vous pour jouer.' : '100€ de bonus à l\'inscription 🎁'}</p>
+              <p>{mode === 'login' ? 'Connectez-vous pour jouer.' : '5€ de bonus à l\'inscription 🎁'}</p>
             </div>
 
             <form className="auth-form" onSubmit={handleSubmit}>
@@ -444,11 +453,12 @@ export default function Auth() {
                 />
               ) : (
                 <RegisterForm 
-                  username={username} email={email} password={password} confirmPassword={confirmPassword}
+                  username={username} email={email} password={password} confirmPassword={confirmPassword} referralCode={referralCode}
                   onUsernameChange={handleUsernameChange}
                   onEmailChange={handleEmailChange}
                   onPasswordChange={handlePasswordChange}
                   onConfirmPasswordChange={handleConfirmPasswordChange}
+                  onReferralCodeChange={handleReferralCodeChange}
                   showPassword={showPassword} showConfirmPassword={showConfirmPassword}
                   onTogglePassword={toggleVisibility} loading={loading}
                 />

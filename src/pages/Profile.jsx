@@ -55,9 +55,36 @@ export default function Profile() {
         </div>
         
         <div style={{ background: 'rgba(255,255,255,0.02)', padding: 'var(--space-6)', borderRadius: 'var(--radius-md)', marginBottom: 'var(--space-6)' }}>
-          <p style={{ color: 'var(--text-secondary)' }}>Nom d'utilisateur : <strong style={{ color: 'var(--text-primary)' }}>{profile?.username || 'Joueur anonyme'}</strong></p>
-          <p style={{ color: 'var(--text-secondary)' }}>Email : <strong style={{ color: 'var(--text-primary)' }}>{user?.email || profile?.email || 'N/A'}</strong></p>
+          <p style={{ color: 'var(--text-secondary)', marginBottom: 'var(--space-3)' }}>Nom d'utilisateur : <strong style={{ color: 'var(--text-primary)' }}>{profile?.username || 'Joueur anonyme'}</strong></p>
+          <p style={{ color: 'var(--text-secondary)', marginBottom: 'var(--space-3)' }}>Email : <strong style={{ color: 'var(--text-primary)' }}>{user?.email || profile?.email || 'N/A'}</strong></p>
           <p style={{ color: 'var(--text-secondary)' }}>Solde actuel : <strong className="text-gold">{(profile?.walletBalance || 0).toFixed(2)}€</strong></p>
+        </div>
+
+        <div style={{ 
+          background: 'rgba(245, 197, 24, 0.05)', 
+          padding: 'var(--space-6)', 
+          borderRadius: 'var(--radius-md)', 
+          marginBottom: 'var(--space-6)',
+          border: '1px dashed var(--gold-primary)',
+          textAlign: 'center'
+        }}>
+          <h3 style={{ color: 'var(--gold-primary)', marginBottom: 'var(--space-2)' }}>🤝 Parrainage</h3>
+          <p style={{ color: 'var(--text-secondary)', marginBottom: 'var(--space-4)', fontSize: 'var(--text-sm)' }}>
+            Invitez vos amis et gagnez <strong className="text-gold">5€</strong> chacun !
+          </p>
+          <div style={{ 
+            background: 'var(--bg-deep)', 
+            padding: 'var(--space-3)', 
+            borderRadius: 'var(--radius-sm)', 
+            fontFamily: 'monospace', 
+            fontSize: '1.2rem',
+            color: 'var(--gold-primary)',
+            letterSpacing: '2px',
+            marginBottom: 'var(--space-2)'
+          }}>
+            {profile?.username || '---'}
+          </div>
+          <p style={{ color: 'var(--text-muted)', fontSize: 'var(--text-xs)' }}>Votre code de parrainage</p>
         </div>
 
         <p style={{ color: 'var(--text-muted)', marginBottom: 'var(--space-6)' }}>
