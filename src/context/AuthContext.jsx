@@ -7,13 +7,15 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   // Fetch with retry — le trigger SQL peut être en retard de quelques ms
   const fetchProfile = async (userId, attempt = 1) => {
     const MAX_ATTEMPTS = 5;
-    const DELAY_MS = [0, 300, 700, 1500, 3000]; // backoff progressif
+    const DELAY_MS = [0, 300, 700, 1500, 3000];
 
     try {
+      setError(null);
       const { data: userProfile, error: profileError } = await supabase
         .from('profiles')
         .select('*')
@@ -21,7 +23,6 @@ export function AuthProvider({ children }) {
         .single();
 
       if (profileError) {
-        // PGRST116 = "No rows found" → le trigger n'a pas encore créé la ligne
         const isNotFound = profileError.code === 'PGRST116';
         if (isNotFound && attempt < MAX_ATTEMPTS) {
           await new Promise(r => setTimeout(r, DELAY_MS[attempt]));
@@ -30,11 +31,13 @@ export function AuthProvider({ children }) {
         throw profileError;
       }
 
+      // Performance: On limite aux 50 dernières transactions
       const { data: transactions, error: txError } = await supabase
         .from('transactions')
         .select('*')
         .eq('user_id', userId)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(50);
 
       if (txError) throw txError;
 
@@ -45,8 +48,9 @@ export function AuthProvider({ children }) {
         gamesWon: userProfile.games_won,
         transactions: transactions || []
       });
-    } catch (error) {
-      console.error("Erreur lors du chargement du profil:", error);
+    } catch (err) {
+      console.error("Erreur lors du chargement du profil:", err);
+      setError(err.message || "Erreur lors du chargement du profil");
     } finally {
       setLoading(false);
     }
@@ -65,7 +69,7 @@ export function AuthProvider({ children }) {
 
     // 2. Écouter les changements (connexion, déconnexion)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (_event === 'SIGNED_IN' || _event === 'SIGNED_OUT') {
+      if (_event === 'SIGNED_IN' || _event === 'SIGNED_OUT' || _event === 'PASSWORD_RECOVERY') {
         setUser(session?.user || null);
         if (session?.user) {
           fetchProfile(session.user.id);
@@ -79,12 +83,18 @@ export function AuthProvider({ children }) {
     return () => subscription.unsubscribe();
   }, []);
 
+  const getRedirectUrl = () => {
+    // En production sur Vercel, on veut l'URL du site, sinon localhost
+    const url = window.location.origin;
+    return `${url}/auth?mode=login`;
+  };
+
   const signUp = async (email, password, username) => {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: window.location.origin,
+        emailRedirectTo: getRedirectUrl(),
         data: {
           username: username, // Passé aux meta-données, lu par notre Trigger SQL
         }
@@ -142,6 +152,17 @@ export function AuthProvider({ children }) {
   const addTransaction = async (transaction) => {
     if (!user) return;
     
+    // Sauvegarde pour rollback si besoin
+    const previousProfile = { ...profile };
+
+    // Mise à jour optimiste du solde
+    if (profile) {
+      setProfile({
+        ...profile,
+        walletBalance: (profile.walletBalance || 0) + transaction.amount
+      });
+    }
+
     const { data, error } = await supabase
       .from('transactions')
       .insert([{ 
@@ -155,10 +176,11 @@ export function AuthProvider({ children }) {
 
     if (error) {
       console.error("Erreur ajout transaction:", error);
+      setProfile(previousProfile); // Rollback
       throw error;
     }
 
-    // Rafraîchir les données
+    // Rafraîchir les données pour être certain du solde final calculé par la DB
     await fetchProfile(user.id);
   };
 
@@ -167,6 +189,7 @@ export function AuthProvider({ children }) {
       user,
       profile,
       loading,
+      error,
       signUp,
       signIn,
       signOut,

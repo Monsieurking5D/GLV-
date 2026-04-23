@@ -22,6 +22,12 @@ export default function Navbar() {
     return () => window.removeEventListener('resize', handleResize);
   }, [menuOpen]);
 
+  // Fermer les menus lors de la navigation
+  useEffect(() => {
+    setMenuOpen(false);
+    setDropdownOpen(false);
+  }, [location.pathname]);
+
   const handleSignOut = async () => {
     try {
       await signOut();

@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
+import { supabase } from '../lib/supabase';
 import LudoBoard from '../components/LudoBoard.jsx';
 import Dice from '../components/Dice.jsx';
 import {
@@ -25,12 +26,12 @@ function makeAIPlayer(color, name, difficulty) {
 export default function Game() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { profile, updateProfile, addTransaction } = useAuth();
+  const { user, profile, updateProfile, addTransaction } = useAuth();
 
   const { mode = '1v1', bet = 0, difficulty = 'medium' } = location.state || {};
 
   // Build players list
-  const buildPlayers = () => {
+  const buildPlayers = useCallback(() => {
     const human = { ...HUMAN_PLAYER };
     if (mode === 'solo' || mode === '1v1') {
       return [human, makeAIPlayer('blue', 'IA', difficulty)];
@@ -42,22 +43,78 @@ export default function Game() {
       return [human, makeAIPlayer('blue', 'IA 1', difficulty), makeAIPlayer('green', 'IA 2', difficulty), makeAIPlayer('yellow', 'IA 3', difficulty)];
     }
     return [human, makeAIPlayer('blue', 'IA', difficulty)];
-  };
+  }, [mode, difficulty]);
 
   const [players] = useState(buildPlayers);
   const [gameState, setGameState] = useState(() =>
     createInitialGameState(buildPlayers(), bet)
   );
+  
   const [diceRolling, setDiceRolling] = useState(false);
   const [showWinner, setShowWinner] = useState(false);
   const [showQuitConfirm, setShowQuitConfirm] = useState(false);
-  const [log, setLog] = useState([]);
+  const [toast, setToast] = useState(null);
+  
   const logRef = useRef(null);
   const aiTimeoutRef = useRef(null);
   const winnerTimeoutRef = useRef(null);
+  const gameIdRef = useRef(null);
 
   const currentPlayer = gameState.players[gameState.currentPlayerIndex];
   const isHumanTurn = !currentPlayer?.isAI;
+
+  const showToast = (msg) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 2500);
+  };
+
+  // Persistence: Sauvegarder la partie initialement
+  useEffect(() => {
+    const initGame = async () => {
+      if (!user) return;
+      try {
+        const { data, error } = await supabase
+          .from('games')
+          .insert([{
+            user_id: user.id,
+            players,
+            mode,
+            bet_amount: bet,
+            difficulty,
+            status: 'active',
+            state: gameState
+          }])
+          .select()
+          .single();
+        
+        if (data) gameIdRef.current = data.id;
+        if (error) console.error("Erreur init game:", error);
+      } catch (err) {
+        console.error("Crash init game:", err);
+      }
+    };
+    initGame();
+  }, []);
+
+  // Persistence: Mettre à jour la partie à chaque changement d'état
+  useEffect(() => {
+    const persistGame = async () => {
+      if (!gameIdRef.current) return;
+      try {
+        await supabase
+          .from('games')
+          .update({
+            state: gameState,
+            status: gameState.winner ? 'finished' : 'active',
+            winner: gameState.winner
+          })
+          .eq('id', gameIdRef.current);
+      } catch (err) {
+        console.error("Erreur persist game:", err);
+      }
+    };
+    persistGame();
+  }, [gameState]);
 
   // Auto-scroll log
   useEffect(() => {
@@ -66,14 +123,54 @@ export default function Game() {
     }
   }, [gameState.log]);
 
+  const handleGameEnd = useCallback(async (winnerColor) => {
+    if (bet > 0) {
+      try {
+        if (winnerColor === 'red') {
+          // Victoire: Gains = Pot (nb players * mise) - commission 5%
+          const winnings = bet * gameState.players.length * 0.95;
+          await addTransaction({
+            type: 'win',
+            amount: winnings,
+            description: `🏆 Victoire ! Gains de partie ${mode}`,
+          });
+          await updateProfile({
+            gamesPlayed: (profile?.gamesPlayed || 0) + 1,
+            gamesWon: (profile?.gamesWon || 0) + 1,
+          });
+        } else {
+          // Perte: On enregistre la perte de la mise (Bug #1)
+          await addTransaction({
+            type: 'loss',
+            amount: -bet,
+            description: `😔 Partie perdue (${mode})`,
+          });
+          await updateProfile({
+            gamesPlayed: (profile?.gamesPlayed || 0) + 1,
+          });
+        }
+      } catch (err) {
+        console.error("Erreur transaction fin de partie:", err);
+      }
+    } else {
+      // Solo sans mise: Juste les stats
+      updateProfile({
+        gamesPlayed: (profile?.gamesPlayed || 0) + 1,
+        gamesWon: winnerColor === 'red' ? (profile?.gamesWon || 0) + 1 : (profile?.gamesWon || 0),
+      });
+    }
+
+    // On affiche la modal APRÈS que les transactions soient OK (Bug #6)
+    winnerTimeoutRef.current = setTimeout(() => setShowWinner(true), 600);
+  }, [bet, mode, gameState.players.length, addTransaction, updateProfile, profile]);
+
   // Detect winner
   useEffect(() => {
     if (gameState.winner) {
-      winnerTimeoutRef.current = setTimeout(() => setShowWinner(true), 600);
       handleGameEnd(gameState.winner);
     }
     return () => clearTimeout(winnerTimeoutRef.current);
-  }, [gameState.winner]);
+  }, [gameState.winner, handleGameEnd]);
 
   // AI turn
   useEffect(() => {
@@ -119,28 +216,14 @@ export default function Game() {
 
   const handleTokenClick = useCallback((tokenId) => {
     if (!isHumanTurn || !gameState.diceRolled) return;
-    if (!gameState.movablePieces.includes(tokenId)) return;
+    
+    if (!gameState.movablePieces.includes(tokenId)) {
+      showToast("🚫 Ce pion ne peut pas bouger !");
+      return;
+    }
+    
     setGameState(prev => moveToken(prev, tokenId));
   }, [isHumanTurn, gameState.diceRolled, gameState.movablePieces]);
-
-  const handleGameEnd = useCallback((winnerColor) => {
-    if (bet > 0 && winnerColor === 'red') {
-      const winnings = bet * gameState.players.length * 0.95;
-      addTransaction({
-        type: 'win',
-        amount: winnings,
-        description: `🏆 Victoire ! Gains de partie ${mode}`,
-      });
-      updateProfile({
-        gamesPlayed: (profile?.gamesPlayed || 0) + 1,
-        gamesWon: (profile?.gamesWon || 0) + 1,
-      });
-    } else {
-      updateProfile({
-        gamesPlayed: (profile?.gamesPlayed || 0) + 1,
-      });
-    }
-  }, [bet, mode, gameState.players.length, addTransaction, updateProfile, profile]);
 
   const handleQuit = () => {
     clearTimeout(aiTimeoutRef.current);
@@ -156,9 +239,12 @@ export default function Game() {
 
   const winnerIsHuman = gameState.winner === 'red';
   const winnings = winnerIsHuman ? (bet * gameState.players.length * 0.95).toFixed(2) : 0;
+  const displayLog = [...gameState.log].slice(-20).reverse();
 
   return (
     <div className="game-page">
+      {toast && <div className="game-toast">{toast}</div>}
+      
       {/* Top bar */}
       <div className="game-topbar">
         <button
@@ -284,10 +370,10 @@ export default function Game() {
         <div className="game-right-panel">
           <div className="log-header">📋 Journal de partie</div>
           <div className="game-log" ref={logRef}>
-            {gameState.log.length === 0 ? (
+            {displayLog.length === 0 ? (
               <div className="log-empty">La partie commence...</div>
             ) : (
-              [...gameState.log].reverse().map((entry, i) => (
+              displayLog.map((entry, i) => (
                 <div key={i} className="log-entry">
                   <span className="log-time">
                     {new Date(entry.time).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}

@@ -57,7 +57,7 @@ export default function LudoBoard({ gameState, onTokenClick, movablePieces = [] 
       viewBox={`0 0 ${S} ${S}`}
       width="100%"
       height="100%"
-      style={{ display: 'block', maxWidth: S, maxHeight: S }}
+      style={{ display: 'block' }}
       className="ludo-board-svg"
     >
       <defs>

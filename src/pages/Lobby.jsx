@@ -53,7 +53,7 @@ const DIFFICULTIES = [
 ];
 
 export default function Lobby() {
-  const { profile, addTransaction } = useAuth();
+  const { profile, addTransaction, loading, error } = useAuth();
   const navigate = useNavigate();
   const [selectedMode, setSelectedMode] = useState('1v1');
   const [selectedBet, setSelectedBet] = useState(10);
@@ -62,6 +62,40 @@ export default function Lobby() {
   const [depositAmount, setDepositAmount] = useState(50);
   const [depositLoading, setDepositLoading] = useState(false);
   const [toast, setToast] = useState(null);
+
+  if (loading) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexDirection: 'column',
+        gap: 16,
+        background: 'var(--bg-deep)',
+      }}>
+        <div className="spinner" style={{ width: 48, height: 48 }} />
+        <p style={{ color: 'var(--text-muted)', fontFamily: 'Outfit, sans-serif' }}>
+          Chargement de votre compte...
+        </p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-6)' }}>
+        <div className="auth-card" style={{ maxWidth: 400, textAlign: 'center' }}>
+          <div style={{ fontSize: '3rem', marginBottom: 'var(--space-4)' }}>⚠️</div>
+          <h2 style={{ marginBottom: 'var(--space-2)' }}>Erreur de chargement</h2>
+          <p style={{ color: 'var(--text-secondary)', marginBottom: 'var(--space-6)' }}>{error}</p>
+          <button className="btn btn-gold w-full" onClick={() => window.location.reload()}>
+            Réessayer
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const currentMode = GAME_MODES.find(m => m.id === selectedMode);
   const balance = profile?.walletBalance || 0;
@@ -81,14 +115,8 @@ export default function Lobby() {
       return;
     }
 
-    // Déduire la mise si pas solo
-    if (!isSoloMode) {
-      addTransaction({
-        type: 'bet',
-        amount: -selectedBet,
-        description: `🎲 Mise pour partie ${currentMode.label}`,
-      });
-    }
+    // On ne déduit plus la mise ici (Bug #2)
+    // Elle sera déduite à la fin du jeu dans Game.jsx
 
     // Lancer la partie
     navigate('/game', {
@@ -109,7 +137,7 @@ export default function Lobby() {
     addTransaction({
       type: 'deposit',
       amount: depositAmount,
-      description: `💳 Dépôt de ${depositAmount}€`,
+      description: `💳 Dépôt de ${depositAmount}€ (TEST)`,
     });
 
     setDepositLoading(false);
@@ -312,7 +340,7 @@ export default function Lobby() {
                     <div className="tx-info">
                       <span className="tx-desc">{tx.description}</span>
                       <span className="tx-date">
-                        {new Date(tx.date).toLocaleDateString('fr-FR')}
+                        {new Date(tx.created_at).toLocaleDateString('fr-FR')}
                       </span>
                     </div>
                     <span className={`tx-amount ${tx.amount > 0 ? 'positive' : 'negative'}`}>

@@ -98,14 +98,78 @@ const ResetPasswordScreen = React.memo(({
   </div>
 ));
 
+/** Écran pour définir un nouveau mot de passe */
+const UpdatePasswordScreen = React.memo(({ 
+  password, 
+  confirmPassword,
+  onFieldChange, 
+  onUpdate, 
+  loading, 
+  error,
+  showPassword,
+  onTogglePassword
+}) => {
+  const strength = useMemo(() => getPasswordStrength(password), [password]);
+  const strengthLabel = ['', 'Faible', 'Moyen', 'Fort'];
+  const strengthColor = ['', '#EF4444', '#F59E0B', '#10B981'];
+
+  return (
+    <div className="auth-card animate-fade-in-up">
+      <div className="auth-card-header">
+        <h1>Nouveau mot de passe</h1>
+        <p>Choisissez un mot de passe sécurisé pour votre compte.</p>
+      </div>
+      {error && <div className="auth-error" role="alert">⚠️ {error}</div>}
+      <form onSubmit={onUpdate} className="auth-form">
+        <div className="input-group">
+          <label htmlFor="password">Nouveau mot de passe</label>
+          <div className="password-wrapper">
+            <input 
+              id="password" name="password" type={showPassword ? 'text' : 'password'} className="input" 
+              placeholder="Min. 8 caractères" value={password} onChange={onFieldChange} required minLength={8}
+            />
+            <button type="button" className="password-toggle" onClick={() => onTogglePassword('pwd')} tabIndex={-1}>
+              {showPassword ? '🙈' : '👁️'}
+            </button>
+          </div>
+          {password && (
+            <div style={{ marginTop: 6 }}>
+              <div style={{ display: 'flex', gap: 4, marginBottom: 3 }}>
+                {[1, 2, 3].map(i => (
+                  <div key={i} style={{ 
+                    flex: 1, height: 3, borderRadius: 2, 
+                    background: i <= strength ? strengthColor[strength] : 'var(--border-subtle)',
+                    transition: 'background 0.3s' 
+                  }} />
+                ))}
+              </div>
+              <span style={{ fontSize: 'var(--text-xs)', color: strengthColor[strength] }}>Force : {strengthLabel[strength]}</span>
+            </div>
+          )}
+        </div>
+        <div className="input-group" style={{ marginBottom: 'var(--space-6)' }}>
+          <label htmlFor="confirmPassword">Confirmer le mot de passe</label>
+          <input 
+            id="confirmPassword" name="confirmPassword" type="password" className="input" 
+            placeholder="••••••••" value={confirmPassword} onChange={onFieldChange} required
+          />
+        </div>
+        <button type="submit" className="btn btn-gold w-full" style={{ height: 52 }} disabled={loading}>
+          {loading ? 'Mise à jour...' : '💾 Enregistrer le mot de passe'}
+        </button>
+      </form>
+    </div>
+  );
+});
+
 /** Formulaire de connexion */
-const LoginForm = React.memo(({ email, password, onFieldChange, showPassword, onTogglePassword, loading }) => (
+const LoginForm = React.memo(({ email, password, onEmailChange, onPasswordChange, showPassword, onTogglePassword, loading }) => (
   <>
     <div className="input-group">
       <label htmlFor="email">Adresse email</label>
       <input 
         id="email" name="email" type="email" className="input" placeholder="vous@exemple.com"
-        value={email} onChange={onFieldChange} required autoComplete="email"
+        value={email} onChange={(e) => onEmailChange(e.target.value)} required autoComplete="email"
       />
     </div>
     <div className="input-group">
@@ -113,7 +177,7 @@ const LoginForm = React.memo(({ email, password, onFieldChange, showPassword, on
       <div className="password-wrapper">
         <input 
           id="password" name="password" type={showPassword ? 'text' : 'password'} className="input" placeholder="••••••••"
-          value={password} onChange={onFieldChange} required autoComplete="current-password"
+          value={password} onChange={(e) => onPasswordChange(e.target.value)} required autoComplete="current-password"
         />
         <button 
           type="button" className="password-toggle" onClick={() => onTogglePassword('pwd')} tabIndex={-1}
@@ -128,9 +192,11 @@ const LoginForm = React.memo(({ email, password, onFieldChange, showPassword, on
 
 /** Formulaire d'inscription */
 const RegisterForm = React.memo(({ 
-  formData, onFieldChange, showPassword, showConfirmPassword, onTogglePassword, loading 
+  username, email, password, confirmPassword,
+  onUsernameChange, onEmailChange, onPasswordChange, onConfirmPasswordChange,
+  showPassword, showConfirmPassword, onTogglePassword, loading 
 }) => {
-  const strength = useMemo(() => getPasswordStrength(formData.password), [formData.password]);
+  const strength = useMemo(() => getPasswordStrength(password), [password]);
   const strengthLabel = ['', 'Faible', 'Moyen', 'Fort'];
   const strengthColor = ['', '#EF4444', '#F59E0B', '#10B981'];
 
@@ -140,14 +206,14 @@ const RegisterForm = React.memo(({
         <label htmlFor="username">Nom d'utilisateur</label>
         <input 
           id="username" name="username" type="text" className="input" placeholder="MonPseudo123"
-          value={formData.username} onChange={onFieldChange} required minLength={3} maxLength={30}
+          value={username} onChange={(e) => onUsernameChange(e.target.value)} required minLength={3} maxLength={30}
         />
       </div>
       <div className="input-group">
         <label htmlFor="email">Adresse email</label>
         <input 
           id="email" name="email" type="email" className="input" placeholder="vous@exemple.com"
-          value={formData.email} onChange={onFieldChange} required
+          value={email} onChange={(e) => onEmailChange(e.target.value)} required
         />
       </div>
       <div className="input-group">
@@ -155,7 +221,7 @@ const RegisterForm = React.memo(({
         <div className="password-wrapper">
           <input 
             id="password" name="password" type={showPassword ? 'text' : 'password'} className="input" placeholder="Min. 8 caractères"
-            value={formData.password} onChange={onFieldChange} required minLength={8}
+            value={password} onChange={(e) => onPasswordChange(e.target.value)} required minLength={8}
           />
           <button 
             type="button" className="password-toggle" onClick={() => onTogglePassword('pwd')} tabIndex={-1}
@@ -163,7 +229,7 @@ const RegisterForm = React.memo(({
             {showPassword ? '🙈' : '👁️'}
           </button>
         </div>
-        {formData.password && (
+        {password && (
           <div style={{ marginTop: 6 }}>
             <div style={{ display: 'flex', gap: 4, marginBottom: 3 }}>
               {[1, 2, 3].map(i => (
@@ -183,7 +249,7 @@ const RegisterForm = React.memo(({
         <div className="password-wrapper">
           <input 
             id="confirmPassword" name="confirmPassword" type={showConfirmPassword ? 'text' : 'password'} className="input" placeholder="••••••••"
-            value={formData.confirmPassword} onChange={onFieldChange} required
+            value={confirmPassword} onChange={(e) => onConfirmPasswordChange(e.target.value)} required
           />
           <button 
             type="button" className="password-toggle" onClick={() => onTogglePassword('confirm')} tabIndex={-1}
@@ -201,7 +267,13 @@ const RegisterForm = React.memo(({
 export default function Auth() {
   const [searchParams] = useSearchParams();
   const [mode, setMode] = useState(searchParams.get('mode') || 'login');
-  const [formData, setFormData] = useState({ email: '', password: '', username: '', confirmPassword: '' });
+  
+  // États individuels pour la performance (INP)
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [username, setUsername] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -210,26 +282,42 @@ export default function Auth() {
   const [resetSent, setResetSent] = useState(false);
   const [showReset, setShowReset] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   
   const isSubmitting = useRef(false);
   const { signIn, signUp, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (isAuthenticated) navigate('/lobby');
-  }, [isAuthenticated, navigate]);
+    // Ne pas rediriger si on est en train de réinitialiser le mot de passe
+    if (isAuthenticated && mode !== 'update-password') {
+      navigate('/lobby');
+    }
+  }, [isAuthenticated, navigate, mode]);
 
   useEffect(() => {
-    setMode(searchParams.get('mode') || 'login');
-    setError('');
+    // Détecter si on revient d'une confirmation d'email (format hash ou query)
+    const hash = window.location.hash;
+    const type = searchParams.get('type');
+    const isSignupConfirm = hash.includes('type=signup') || type === 'signup';
+    const isRecovery = hash.includes('type=recovery') || type === 'recovery' || searchParams.get('mode') === 'recovery';
+
+    if (hash.includes('access_token') || searchParams.get('token_hash')) {
+      if (isSignupConfirm) {
+        setSuccessMessage('Email confirmé avec succès ! Vous pouvez maintenant vous connecter.');
+        // Nettoyer l'URL
+        window.history.replaceState(null, '', window.location.pathname);
+      } else if (isRecovery) {
+        setMode('update-password');
+      }
+    }
   }, [searchParams]);
 
-  // Handler optimisé pour les champs
-  const handleFieldChange = useCallback((e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-    if (error) setError('');
-  }, [error]);
+  // Handlers mémoïsés
+  const handleEmailChange = useCallback((val) => { setEmail(val); if (error) setError(''); }, [error]);
+  const handlePasswordChange = useCallback((val) => { setPassword(val); if (error) setError(''); }, [error]);
+  const handleUsernameChange = useCallback((val) => { setUsername(val); if (error) setError(''); }, [error]);
+  const handleConfirmPasswordChange = useCallback((val) => { setConfirmPassword(val); if (error) setError(''); }, [error]);
 
   const toggleVisibility = useCallback((type) => {
     if (type === 'pwd') setShowPassword(v => !v);
@@ -244,17 +332,17 @@ export default function Auth() {
     setLoading(true);
 
     try {
-      const email = formData.email.trim().toLowerCase();
+      const cleanEmail = email.trim().toLowerCase();
       if (mode === 'register') {
-        const username = formData.username.trim();
-        if (username.length < 3) throw new Error("Pseudo trop court.");
-        if (formData.password !== formData.confirmPassword) throw new Error('Les mots de passe ne correspondent pas.');
-        if (WEAK_PASSWORDS.includes(formData.password.toLowerCase())) throw new Error('Mot de passe trop simple.');
+        const cleanUsername = username.trim();
+        if (cleanUsername.length < 3) throw new Error("Pseudo trop court.");
+        if (password !== confirmPassword) throw new Error('Les mots de passe ne correspondent pas.');
+        if (WEAK_PASSWORDS.includes(password.toLowerCase())) throw new Error('Mot de passe trop simple.');
 
-        const { session } = await signUp(email, formData.password, username);
+        const { session } = await signUp(cleanEmail, password, cleanUsername);
         if (!session) { setEmailSent(true); return; }
       } else {
-        await signIn(email, formData.password);
+        await signIn(cleanEmail, password);
       }
     } catch (err) {
       setError(translateError(err.message));
@@ -275,6 +363,37 @@ export default function Auth() {
     else setResetSent(true);
   };
 
+  const handleUpdatePassword = async (e) => {
+    e.preventDefault();
+    if (password !== confirmPassword) {
+      setError('Les mots de passe ne correspondent pas.');
+      return;
+    }
+    setLoading(true);
+    setError('');
+    
+    try {
+      const { error } = await supabase.auth.updateUser({ 
+        password: password 
+      });
+      if (error) throw error;
+      
+      setSuccessMessage('Mot de passe mis à jour ! Vous êtes maintenant connecté.');
+      setMode('login');
+      // Nettoyer le hash maintenant
+      window.history.replaceState(null, '', window.location.pathname + window.location.search);
+      
+      setTimeout(() => {
+        navigate('/lobby');
+      }, 2000);
+      
+    } catch (err) {
+      setError(translateError(err.message));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // ── RENDU ──────────────────────────────────────────────────────────────────
 
   return (
@@ -288,7 +407,19 @@ export default function Auth() {
         </button>
 
         {emailSent ? (
-          <VerificationScreen email={formData.email} onBack={() => navigate('/auth?mode=login')} />
+          <VerificationScreen email={email} onBack={() => navigate('/auth?mode=login')} />
+        ) : mode === 'update-password' ? (
+          <UpdatePasswordScreen 
+            password={password} confirmPassword={confirmPassword}
+            onFieldChange={(e) => {
+              const { name, value } = e.target;
+              if (name === 'password') setPassword(value);
+              else setConfirmPassword(value);
+            }} 
+            onUpdate={handleUpdatePassword}
+            loading={loading} error={error} showPassword={showPassword}
+            onTogglePassword={toggleVisibility}
+          />
         ) : showReset ? (
           <ResetPasswordScreen 
             email={resetEmail} onEmailChange={(e) => setResetEmail(e.target.value)}
@@ -305,17 +436,36 @@ export default function Auth() {
             <form className="auth-form" onSubmit={handleSubmit}>
               {mode === 'login' ? (
                 <LoginForm 
-                  email={formData.email} password={formData.password}
-                  onFieldChange={handleFieldChange} showPassword={showPassword}
+                  email={email} password={password}
+                  onEmailChange={handleEmailChange}
+                  onPasswordChange={handlePasswordChange}
+                  showPassword={showPassword}
                   onTogglePassword={toggleVisibility} loading={loading}
                 />
               ) : (
                 <RegisterForm 
-                  formData={formData} onFieldChange={handleFieldChange}
+                  username={username} email={email} password={password} confirmPassword={confirmPassword}
+                  onUsernameChange={handleUsernameChange}
+                  onEmailChange={handleEmailChange}
+                  onPasswordChange={handlePasswordChange}
+                  onConfirmPasswordChange={handleConfirmPasswordChange}
                   showPassword={showPassword} showConfirmPassword={showConfirmPassword}
                   onTogglePassword={toggleVisibility} loading={loading}
                 />
               )}
+
+              {successMessage && <div className="auth-success" role="alert" style={{ 
+                background: 'rgba(16, 185, 129, 0.1)', 
+                color: '#10B981', 
+                padding: 'var(--space-3)', 
+                borderRadius: 'var(--radius-md)', 
+                marginBottom: 'var(--space-4)',
+                border: '1px solid rgba(16, 185, 129, 0.2)',
+                fontSize: 'var(--text-sm)',
+                textAlign: 'center'
+              }}>
+                ✅ {successMessage}
+              </div>}
 
               {error && <div className="auth-error" role="alert">⚠️ {error}</div>}
 

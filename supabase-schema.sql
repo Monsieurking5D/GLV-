@@ -60,7 +60,7 @@ BEGIN
   INSERT INTO public.profiles (id, username, email, wallet_balance)
   VALUES (
     new.id,
-    COALESCE(new.raw_user_meta_data->>'username', split_part(new.email, '@', 1)) || '_' || left(new.id::text, 4),
+    COALESCE(new.raw_user_meta_data->>'username', 'Joueur_' || left(new.id::text, 5)),
     new.email,
     0 -- Le wallet démarre à 0 (les 100€ sont crédités par la transaction ci-dessous)
   );
@@ -101,3 +101,40 @@ DROP TRIGGER IF EXISTS on_transaction_inserted ON public.transactions;
 CREATE TRIGGER on_transaction_inserted
   AFTER INSERT ON public.transactions
   FOR EACH ROW EXECUTE PROCEDURE public.update_wallet_balance();
+
+-- 7. Table des parties (Persistence)
+CREATE TABLE IF NOT EXISTS public.games (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  players JSONB NOT NULL,
+  state JSONB NOT NULL,
+  status TEXT DEFAULT 'active' NOT NULL, -- 'active' | 'finished'
+  winner TEXT,
+  bet_amount NUMERIC DEFAULT 0,
+  mode TEXT,
+  difficulty TEXT,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now(),
+  CONSTRAINT check_game_status CHECK (status IN ('active', 'finished'))
+);
+
+-- Index pour les parties actives
+CREATE INDEX IF NOT EXISTS idx_games_user_id_status ON public.games(user_id, status);
+
+-- Sécurisation
+ALTER TABLE public.games ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Les utilisateurs peuvent voir leurs propres parties" ON public.games;
+CREATE POLICY "Les utilisateurs peuvent voir leurs propres parties"
+  ON public.games FOR SELECT
+  USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Les utilisateurs peuvent inserer leurs parties" ON public.games;
+CREATE POLICY "Les utilisateurs peuvent inserer leurs parties"
+  ON public.games FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Les utilisateurs peuvent mettre a jour leurs parties" ON public.games;
+CREATE POLICY "Les utilisateurs peuvent mettre a jour leurs parties"
+  ON public.games FOR UPDATE
+  USING (auth.uid() = user_id);
