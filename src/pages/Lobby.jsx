@@ -292,24 +292,24 @@ export default function Lobby() {
                   ))}
                 </div>
 
-                {selectedBet && (
+                 {selectedBet && (
                   <div className="bet-summary">
                     <div className="bet-summary-row">
                       <span>Votre mise</span>
-                      <span className="bet-summary-value">{selectedBet}€</span>
+                      <span className="bet-summary-value">{selectedBet.toFixed(2)}€</span>
                     </div>
                     <div className="bet-summary-row">
                       <span>Pot total (2 joueurs)</span>
-                      <span className="bet-summary-value">{selectedBet * 2}€</span>
+                      <span className="bet-summary-value">{(selectedBet * 2).toFixed(2)}€</span>
                     </div>
                     <div className="bet-summary-row highlight">
                       <span>Gains potentiels</span>
                       <span className="bet-summary-value gold">
-                        {(selectedBet * 2 * 0.95).toFixed(2)}€
+                        {((selectedBet * 2) - Math.min(selectedBet * 2 * 0.10, 3.00)).toFixed(2)}€
                       </span>
                     </div>
                     <div className="bet-summary-note">
-                      5% de commission plateforme déduite
+                      Commission : 10% (Plafonnée à 3€ max)
                     </div>
                   </div>
                 )}

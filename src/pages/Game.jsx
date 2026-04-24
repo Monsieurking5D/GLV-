@@ -163,12 +163,16 @@ export default function Game() {
     if (bet > 0) {
       try {
         if (winnerColor === 'red') {
-          // Victoire: Gains nets = (Pot total * 0.95) - mise initiale
-          const winnings = (bet * gameState.players.length * 0.95) - bet;
+          // Nouveau système de commission : 10% plafonné à 3€
+          const potTotal = bet * gameState.players.length;
+          const commission = Math.min(potTotal * 0.10, 3.00);
+          const winningsTotal = potTotal - commission;
+          const netGains = winningsTotal - bet; // Gain net à ajouter au solde
+
           await addTransaction({
             type: 'win',
-            amount: winnings,
-            description: `🏆 Victoire ! Gains nets de partie ${mode}`,
+            amount: netGains,
+            description: `🏆 Victoire ! (Commission: ${commission.toFixed(2)}€)`,
           });
           await updateProfile({
             gamesPlayed: (profile?.gamesPlayed || 0) + 1,
@@ -293,7 +297,9 @@ export default function Game() {
   };
 
   const winnerIsHuman = gameState.winner === 'red';
-  const winnings = winnerIsHuman ? (bet * gameState.players.length * 0.95).toFixed(2) : 0;
+  const potTotal = bet * gameState.players.length;
+  const commission = Math.min(potTotal * 0.10, 3.00);
+  const winnings = winnerIsHuman ? (potTotal - commission).toFixed(2) : 0;
   const displayLog = [...gameState.log].slice(-20).reverse();
 
   return (
