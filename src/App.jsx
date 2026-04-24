@@ -1,4 +1,5 @@
 // src/App.jsx
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext.jsx';
 import Navbar from './components/Navbar.jsx';
@@ -38,7 +39,22 @@ function PrivateRoute({ children }) {
 }
 
 function AppRoutes() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, signOut } = useAuth();
+
+  // Système de déconnexion automatique à la fermeture de l'onglet
+  // Uniquement si l'utilisateur n'est PAS dans une partie en cours
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      const isGamePage = window.location.pathname === '/game';
+      if (isAuthenticated && !isGamePage) {
+        // On tente une déconnexion rapide
+        signOut();
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isAuthenticated, signOut]);
 
   return (
     <>
