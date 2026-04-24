@@ -1,305 +1,354 @@
 // src/components/LudoBoard.jsx
-// Plateau de jeu Ludo interactif — SVG 15x15
+// Plateau de jeu Ludo classique — SVG 15x15 (style coloré clair)
+// API conservée: { gameState, onTokenClick, movablePieces }
 
-import { MAIN_PATH_COORDS, HOME_STRETCH_COORDS, HOME_ZONE_TOKENS, COLOR_HEX, COLOR_LIGHT_HEX, SAFE_CELLS, START_POSITIONS } from '../game/boardConfig.js';
+import {
+  MAIN_PATH_COORDS,
+  HOME_STRETCH_COORDS,
+  HOME_ZONE_TOKENS,
+  COLOR_HEX,
+  SAFE_CELLS,
+  START_POSITIONS,
+} from '../game/boardConfig.js';
 import { TOKEN_STATE } from '../game/ludoEngine.js';
+import './LudoBoard.css';
 
-const S = 600; // SVG size
-const CELL = S / 15;
-const R_TOKEN = CELL * 0.34;
+const S = 600;          // taille interne du SVG (viewBox)
+const N = 15;           // grille 15x15
+const CELL = S / N;
+const PIN_R = CELL * 0.34;
 
-// Position SVG d'une cellule [col, row]
+// --- Helpers --------------------------------------------------------------
+
 function cellXY(col, row) {
-  return {
-    x: col * CELL + CELL / 2,
-    y: row * CELL + CELL / 2,
-  };
+  return { x: col * CELL + CELL / 2, y: row * CELL + CELL / 2 };
 }
+
+// Étoile à 5 branches centrée sur (cx, cy)
+function starPath(cx, cy, rOuter, rInner = rOuter * 0.45) {
+  const points = [];
+  for (let i = 0; i < 10; i++) {
+    const r = i % 2 === 0 ? rOuter : rInner;
+    const a = (Math.PI / 5) * i - Math.PI / 2;
+    points.push(`${cx + Math.cos(a) * r},${cy + Math.sin(a) * r}`);
+  }
+  return `M${points.join(' L')} Z`;
+}
+
+// Couleur de la zone d'accueil pour chaque coin (correspond au layout du moteur)
+const HOME_QUADRANTS = [
+  { color: 'red',    x: 0, y: 9 },  // bas-gauche
+  { color: 'green',  x: 9, y: 0 },  // haut-droite
+  { color: 'blue',   x: 0, y: 0 },  // haut-gauche  (selon HOME_ZONE_TOKENS yellow→haut-gauche; on suit le moteur)
+  { color: 'yellow', x: 9, y: 9 },  // bas-droite
+];
+
+// On lit HOME_ZONE_TOKENS pour mapper la couleur au coin réellement utilisé
+function quadrantsFromConfig() {
+  return Object.entries(HOME_ZONE_TOKENS).map(([color, tokens]) => {
+    const [c, r] = tokens[0];
+    const x = c < 6 ? 0 : 9;
+    const y = r < 6 ? 0 : 9;
+    return { color, x, y };
+  });
+}
+
+// Couleur de fond d'une cellule du chemin (couloirs finaux + cases de départ)
+function pathCellFill(col, row) {
+  // Couloirs finaux (ligne col=7 verticale, row=7 horizontale)
+  if (col === 7 && row >= 1 && row <= 6) return COLOR_HEX.green;
+  if (col === 7 && row >= 8 && row <= 13) return COLOR_HEX.red;
+  if (row === 7 && col >= 1 && col <= 6) return COLOR_HEX.blue;
+  if (row === 7 && col >= 8 && col <= 13) return COLOR_HEX.yellow;
+
+  // Cases de départ colorées (juste devant chaque maison)
+  // RED start = MAIN_PATH_COORDS[0] = (6,13) ; GREEN = (8,1) ; BLUE = (1,6) ; YELLOW = (13,8)
+  const startCol = (color) => {
+    const [c, r] = MAIN_PATH_COORDS[START_POSITIONS[color]];
+    return c === col && r === row;
+  };
+  if (startCol('red'))    return COLOR_HEX.red;
+  if (startCol('green'))  return COLOR_HEX.green;
+  if (startCol('blue'))   return COLOR_HEX.blue;
+  if (startCol('yellow')) return COLOR_HEX.yellow;
+
+  return '#FFFFFF';
+}
+
+// Une cellule appartient-elle au chemin (croix blanche) ?
+function isPathCell(col, row) {
+  const inVerticalArm = (col >= 6 && col <= 8) && (row < 6 || row > 8);
+  const inHorizontalArm = (row >= 6 && row <= 8) && (col < 6 || col > 8);
+  return inVerticalArm || inHorizontalArm;
+}
+
+// --- Composant ------------------------------------------------------------
 
 export default function LudoBoard({ gameState, onTokenClick, movablePieces = [] }) {
   if (!gameState) return null;
 
-  const { tokens, players } = gameState;
+  const { tokens, players, currentPlayerIndex } = gameState;
+  const currentColor = players?.[currentPlayerIndex]?.color;
+  const quadrants = quadrantsFromConfig();
 
-  // Calculer la position SVG d'un token
   function getTokenXY(token) {
     if (token.state === TOKEN_STATE.HOME) {
-      const homeCoords = HOME_ZONE_TOKENS[token.color];
-      if (!homeCoords) return { x: 0, y: 0 };
-      const [col, row] = homeCoords[token.id % homeCoords.length] || homeCoords[0];
-      return cellXY(col, row);
+      const slots = HOME_ZONE_TOKENS[token.color];
+      const [c, r] = slots[token.id % slots.length];
+      return cellXY(c, r);
     }
     if (token.state === TOKEN_STATE.FINISHED) {
-      // Centre du plateau
-      const offsets = [[0,-0.15],[0.15,0],[-0.15,0],[0,0.15]];
-      const [dx, dy] = offsets[token.id] || [0, 0];
-      return { x: S / 2 + dx * CELL, y: S / 2 + dy * CELL };
+      // On place les pions dans leur triangle respectif au centre
+      const offset = CELL * 0.6;
+      const spread = [[-0.12, -0.12], [0.12, -0.12], [-0.12, 0.12], [0.12, 0.12]];
+      const [sx, sy] = spread[token.id] || [0, 0];
+      
+      let bx = S / 2;
+      let by = S / 2;
+
+      if (token.color === 'red')    by += offset;
+      if (token.color === 'green')  by -= offset;
+      if (token.color === 'blue')   bx -= offset;
+      if (token.color === 'yellow') bx += offset;
+
+      return { x: bx + sx * CELL, y: by + sy * CELL };
     }
     if (token.homeStretchPos >= 0) {
       const coords = HOME_STRETCH_COORDS[token.color];
-      if (!coords || !coords[token.homeStretchPos]) return { x: 0, y: 0 };
-      const [col, row] = coords[token.homeStretchPos];
-      return cellXY(col, row);
+      const [c, r] = coords[token.homeStretchPos] || [7, 7];
+      return cellXY(c, r);
     }
-    // Sur le plateau principal
-    const coords = MAIN_PATH_COORDS[token.position];
-    if (!coords) return { x: 0, y: 0 };
-    const [col, row] = coords;
-    return cellXY(col, row);
+    const [c, r] = MAIN_PATH_COORDS[token.position] || [0, 0];
+    return cellXY(c, r);
+  }
+
+  // Détecter empilement: si plusieurs pions sur même cellule, on les disperse
+  function getStackOffset(token, allTokens) {
+    if (token.state !== TOKEN_STATE.ACTIVE || token.homeStretchPos >= 0) return { dx: 0, dy: 0 };
+    const sameCell = [];
+    Object.values(allTokens).forEach((arr) => {
+      arr.forEach((t) => {
+        if (
+          t.state === TOKEN_STATE.ACTIVE &&
+          t.homeStretchPos < 0 &&
+          t.position === token.position
+        ) {
+          sameCell.push(`${t.color}-${t.id}`);
+        }
+      });
+    });
+    if (sameCell.length <= 1) return { dx: 0, dy: 0 };
+    const idx = sameCell.indexOf(`${token.color}-${token.id}`);
+    const angle = (Math.PI * 2 * idx) / sameCell.length;
+    const r = CELL * 0.18;
+    return { dx: Math.cos(angle) * r, dy: Math.sin(angle) * r };
   }
 
   const isMovable = (token) =>
-    movablePieces.includes(token.id) &&
-    players[gameState.currentPlayerIndex]?.color === token.color;
+    token.color === currentColor && movablePieces.includes(token.id);
 
   return (
     <svg
       viewBox={`0 0 ${S} ${S}`}
       width="100%"
       height="100%"
-      style={{ display: 'block' }}
       className="ludo-board-svg"
+      role="img"
+      aria-label="Plateau de Ludo"
     >
       <defs>
-        <radialGradient id="bgGrad" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#111130" />
-          <stop offset="100%" stopColor="#0C0C22" />
-        </radialGradient>
-        <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-          <feDropShadow dx="0" dy="2" stdDeviation="3" floodColor="rgba(0,0,0,0.5)" />
+        <filter id="lb-shadow" x="-30%" y="-30%" width="160%" height="160%">
+          <feDropShadow dx="0" dy="2" stdDeviation="2" floodColor="rgba(0,0,0,0.35)" />
         </filter>
-        <filter id="glow-gold">
-          <feGaussianBlur stdDeviation="3" result="coloredBlur" />
-          <feMerge>
-            <feMergeNode in="coloredBlur" />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
+        <filter id="lb-pin-shadow" x="-50%" y="-50%" width="200%" height="200%">
+          <feDropShadow dx="0" dy="3" stdDeviation="2.5" floodColor="rgba(0,0,0,0.45)" />
         </filter>
+        {Object.entries(COLOR_HEX).map(([c, hex]) => (
+          <radialGradient
+            key={`grad-${c}`}
+            id={`pin-grad-${c}`}
+            cx="35%"
+            cy="35%"
+            r="65%"
+          >
+            <stop offset="0%" stopColor="#ffffff" stopOpacity="0.85" />
+            <stop offset="35%" stopColor={hex} stopOpacity="1" />
+            <stop offset="100%" stopColor={hex} stopOpacity="1" />
+          </radialGradient>
+        ))}
       </defs>
 
-      {/* Background */}
-      <rect width={S} height={S} fill="url(#bgGrad)" rx={8} />
+      {/* 1) Fond global */}
+      <rect width={S} height={S} fill="#FFFFFF" />
 
-      {/* Grid cells */}
-      {Array.from({ length: 15 }).map((_, row) =>
-        Array.from({ length: 15 }).map((_, col) => {
-          const x = col * CELL;
-          const y = row * CELL;
+      {/* 2) Quadrants colorés (zones d'accueil) */}
+      {quadrants.map(({ color, x, y }) => (
+        <g key={`q-${color}`}>
+          <rect
+            x={x * CELL}
+            y={y * CELL}
+            width={6 * CELL}
+            height={6 * CELL}
+            fill={COLOR_HEX[color]}
+          />
+          {/* Carré blanc intérieur */}
+          <rect
+            x={(x + 0.7) * CELL}
+            y={(y + 0.7) * CELL}
+            width={4.6 * CELL}
+            height={4.6 * CELL}
+            fill="#FFFFFF"
+            stroke="rgba(0,0,0,0.05)"
+            strokeWidth="1"
+          />
+        </g>
+      ))}
 
-          // Home zones
-          const isTopLeft = col < 6 && row < 6;     // Green
-          const isTopRight = col >= 9 && row < 6;    // Yellow
-          const isBotLeft = col < 6 && row >= 9;     // Blue
-          const isBotRight = col >= 9 && row >= 9;   // Red
-          const isCenter = col >= 6 && col < 9 && row >= 6 && row < 9;
-
-          let cellFill = '#111130';
-          let cellOpacity = 1;
-
-          if (isTopLeft) { cellFill = '#22C55E'; cellOpacity = 0.15; }
-          else if (isTopRight) { cellFill = '#F59E0B'; cellOpacity = 0.15; }
-          else if (isBotLeft) { cellFill = '#3B82F6'; cellOpacity = 0.15; }
-          else if (isBotRight) { cellFill = '#EF4444'; cellOpacity = 0.15; }
-          else if (isCenter) { cellFill = '#0A0A1A'; cellOpacity = 1; }
-
-          // Column corridors
-          if (col === 7 && !isCenter) { cellFill = '#22C55E'; cellOpacity = 0.20; }
-          if (col === 7 && row < 6 && !isCenter) { cellFill = '#22C55E'; cellOpacity = 0.25; }
-          if (col === 7 && row > 8 && !isCenter) { cellFill = '#EF4444'; cellOpacity = 0.25; }
-
-          // Row corridors
-          if (row === 7 && !isCenter) { cellFill = '#3B82F6'; cellOpacity = 0.20; }
-          if (row === 7 && col < 6) { cellFill = '#3B82F6'; cellOpacity = 0.25; }
-          if (row === 7 && col > 8) { cellFill = '#F59E0B'; cellOpacity = 0.25; }
-
+      {/* 3) Grille du chemin (croix blanche + couloirs colorés) */}
+      {Array.from({ length: N }).map((_, row) =>
+        Array.from({ length: N }).map((_, col) => {
+          if (!isPathCell(col, row)) return null;
           return (
             <rect
-              key={`${col}-${row}`}
-              x={x} y={y}
-              width={CELL} height={CELL}
-              fill={cellFill}
-              fillOpacity={cellOpacity}
-              stroke="#F5C51812"
-              strokeWidth={0.5}
+              key={`p-${col}-${row}`}
+              x={col * CELL}
+              y={row * CELL}
+              width={CELL}
+              height={CELL}
+              fill={pathCellFill(col, row)}
+              stroke="rgba(0,0,0,0.55)"
+              strokeWidth="1"
             />
           );
         })
       )}
 
-      {/* Safe cells — stars */}
-      {MAIN_PATH_COORDS.map(([col, row], idx) => {
-        if (!SAFE_CELLS.has(idx)) return null;
-        const { x, y } = cellXY(col, row);
+      {/* 4) Étoiles sur cases sûres */}
+      {[...SAFE_CELLS].map((idx) => {
+        const [c, r] = MAIN_PATH_COORDS[idx] || [];
+        if (c == null) return null;
+        const { x, y } = cellXY(c, r);
         return (
-          <text
+          <path
             key={`star-${idx}`}
-            x={x} y={y + 5}
-            textAnchor="middle"
-            fontSize={CELL * 0.5}
-            fill="#F5C518"
-            opacity={0.7}
-          >
-            ★
-          </text>
+            d={starPath(x, y, CELL * 0.32)}
+            fill="none"
+            stroke="#1f2937"
+            strokeWidth="1.4"
+            strokeLinejoin="round"
+          />
         );
       })}
 
-      {/* Start positions */}
-      {Object.entries(START_POSITIONS).map(([color, pos]) => {
-        const [col, row] = MAIN_PATH_COORDS[pos] || [0, 0];
-        const { x, y } = cellXY(col, row);
+      {/* 5) Flèches d'entrée sur les départs (petite flèche colorée) */}
+      {Object.entries(START_POSITIONS).map(([color]) => {
+        const arrows = {
+          blue:   { x: 0,        y: 7.5 * CELL, rot: 0,   tx: CELL * 0.55, ty: 0 },
+          green:  { x: 7.5*CELL, y: 0,          rot: 90,  tx: 0,           ty: CELL * 0.55 },
+          yellow: { x: 15*CELL,  y: 7.5*CELL,   rot: 180, tx: -CELL*0.55,  ty: 0 },
+          red:    { x: 7.5*CELL, y: 15*CELL,    rot: -90, tx: 0,           ty: -CELL*0.55 },
+        };
+        const a = arrows[color];
+        if (!a) return null;
         return (
-          <circle
-            key={`start-${color}`}
-            cx={x} cy={y}
-            r={CELL * 0.38}
-            fill={COLOR_HEX[color]}
-            fillOpacity={0.25}
-            stroke={COLOR_HEX[color]}
-            strokeWidth={1.5}
-            strokeOpacity={0.6}
-          />
+          <g key={`arr-${color}`} transform={`translate(${a.x + a.tx}, ${a.y + a.ty}) rotate(${a.rot})`}>
+            <path
+              d={`M -${CELL*0.25} 0 L ${CELL*0.25} -${CELL*0.18} L ${CELL*0.25} ${CELL*0.18} Z`}
+              fill={COLOR_HEX[color]}
+              opacity="0.85"
+            />
+          </g>
         );
       })}
 
-      {/* Home zones — inner circles */}
-      {[
-        { color: 'green', cx: 3, cy: 3 },
-        { color: 'yellow', cx: 12, cy: 3 },
-        { color: 'blue', cx: 3, cy: 12 },
-        { color: 'red', cx: 12, cy: 12 },
-      ].map(({ color, cx, cy }) => (
-        <g key={`zone-${color}`}>
-          <rect
-            x={cx === 3 ? 0 : 9} y={cy === 3 ? 0 : 9}
-            width={6 * CELL} height={6 * CELL}
-            fill={COLOR_HEX[color]}
-            fillOpacity={0.12}
-            stroke={COLOR_HEX[color]}
-            strokeOpacity={0.3}
-            strokeWidth={1}
-          />
-          <rect
-            x={(cx === 3 ? 0.6 : 9.6) * CELL}
-            y={(cy === 3 ? 0.6 : 9.6) * CELL}
-            width={4.8 * CELL} height={4.8 * CELL}
-            rx={CELL * 0.4}
-            fill={COLOR_HEX[color]}
-            fillOpacity={0.22}
-            stroke={COLOR_HEX[color]}
-            strokeOpacity={0.35}
-            strokeWidth={1}
-          />
-        </g>
-      ))}
+      {/* 6) Centre — triangles + étoile */}
+      {(() => {
+        const cx = 7.5 * CELL;
+        const cy = 7.5 * CELL;
+        const tri = (color, points) => (
+          <polygon points={points} fill={COLOR_HEX[color]} stroke="rgba(0,0,0,0.4)" strokeWidth="1" />
+        );
+        return (
+          <g>
+            {tri('green',  `${6*CELL},${6*CELL} ${9*CELL},${6*CELL} ${cx},${cy}`)}
+            {tri('yellow', `${9*CELL},${6*CELL} ${9*CELL},${9*CELL} ${cx},${cy}`)}
+            {tri('red',    `${9*CELL},${9*CELL} ${6*CELL},${9*CELL} ${cx},${cy}`)}
+            {tri('blue',   `${6*CELL},${9*CELL} ${6*CELL},${6*CELL} ${cx},${cy}`)}
+          </g>
+        );
+      })()}
 
-      {/* Center — winner triangles */}
-      <polygon
-        points={`${7*CELL},${7*CELL} ${8*CELL},${7*CELL} ${7.5*CELL},${6.2*CELL}`}
-        fill="#22C55E" opacity={0.75}
-      />
-      <polygon
-        points={`${8*CELL},${7*CELL} ${8*CELL},${8*CELL} ${8.8*CELL},${7.5*CELL}`}
-        fill="#F59E0B" opacity={0.75}
-      />
-      <polygon
-        points={`${7*CELL},${8*CELL} ${8*CELL},${8*CELL} ${7.5*CELL},${8.8*CELL}`}
-        fill="#EF4444" opacity={0.75}
-      />
-      <polygon
-        points={`${7*CELL},${7*CELL} ${7*CELL},${8*CELL} ${6.2*CELL},${7.5*CELL}`}
-        fill="#3B82F6" opacity={0.75}
-      />
-      <rect
-        x={7*CELL+2} y={7*CELL+2}
-        width={CELL-4} height={CELL-4}
-        fill="#F5C518"
-        rx={3}
-      />
-      <text
-        x={S/2} y={S/2 + 6}
-        textAnchor="middle"
-        fontSize={CELL * 0.65}
-        fill="#0A0A1A"
-        fontWeight="bold"
-      >★</text>
-
-      {/* Tokens */}
-      {players && Object.values(tokens).map(playerTokens =>
-        playerTokens.map(token => {
-          const { x, y } = getTokenXY(token);
+      {/* 7) Pions */}
+      {tokens && Object.values(tokens).map((arr) =>
+        arr.map((token) => {
+          const { x: bx, y: by } = getTokenXY(token);
+          const { dx, dy } = getStackOffset(token, tokens);
+          const x = bx + dx;
+          const y = by + dy;
           const movable = isMovable(token);
-          const color = COLOR_HEX[token.color];
-          const lightColor = COLOR_LIGHT_HEX[token.color];
+          const fill = `url(#pin-grad-${token.color})`;
+          const stroke = COLOR_HEX[token.color];
 
           return (
             <g
-              key={`token-${token.color}-${token.id}`}
-              className={`token ${movable ? 'token-movable' : ''}`}
+              key={`tok-${token.color}-${token.id}`}
+              className={`lb-token ${movable ? 'lb-token--movable' : ''}`}
               onClick={() => movable && onTokenClick && onTokenClick(token.id)}
               style={{ cursor: movable ? 'pointer' : 'default' }}
             >
-              {/* Glow ring for movable tokens */}
               {movable && (
                 <circle
-                  cx={x} cy={y}
-                  r={R_TOKEN + 5}
+                  cx={x}
+                  cy={y}
+                  r={PIN_R + 5}
+                  className="lb-token-ring"
                   fill="none"
-                  stroke={color}
-                  strokeWidth={2}
-                  strokeOpacity={0.6}
-                  className="token-ring"
+                  stroke={stroke}
+                  strokeWidth="2.5"
                 />
               )}
 
-              {/* Token shadow */}
-              <circle cx={x+1} cy={y+2} r={R_TOKEN} fill="black" fillOpacity={0.4} />
-
-              {/* Token body */}
-              <circle
-                cx={x} cy={y}
-                r={R_TOKEN}
-                fill={color}
-                stroke={lightColor}
-                strokeWidth={2}
-                filter={movable ? 'url(#glow-gold)' : 'url(#shadow)'}
+              {/* Forme "pin" : disque + petite pointe inférieure */}
+              <path
+                d={`
+                  M ${x} ${y - PIN_R}
+                  a ${PIN_R} ${PIN_R} 0 1 0 0.01 0
+                  Z
+                  M ${x - PIN_R * 0.45} ${y + PIN_R * 0.55}
+                  L ${x} ${y + PIN_R * 1.45}
+                  L ${x + PIN_R * 0.45} ${y + PIN_R * 0.55}
+                  Z
+                `}
+                fill={fill}
+                stroke="#FFFFFF"
+                strokeWidth="2"
+                filter="url(#lb-pin-shadow)"
               />
-
-              {/* Token shine */}
+              {/* Trou central blanc */}
+              <circle cx={x} cy={y - PIN_R * 0.05} r={PIN_R * 0.32} fill="#FFFFFF" />
+              {/* Reflet */}
               <circle
-                cx={x - R_TOKEN * 0.25}
-                cy={y - R_TOKEN * 0.28}
-                r={R_TOKEN * 0.28}
-                fill="white"
-                fillOpacity={0.45}
+                cx={x - PIN_R * 0.32}
+                cy={y - PIN_R * 0.45}
+                r={PIN_R * 0.18}
+                fill="#FFFFFF"
+                opacity="0.55"
               />
-
-              {/* Token number */}
-              <text
-                x={x} y={y + 4}
-                textAnchor="middle"
-                fontSize={R_TOKEN * 0.85}
-                fontWeight="700"
-                fill="white"
-                fillOpacity={0.9}
-                fontFamily="Outfit, sans-serif"
-              >
-                {token.id + 1}
-              </text>
             </g>
           );
         })
       )}
 
-      {/* Border */}
+      {/* 8) Bordure extérieure dorée */}
       <rect
-        x={1} y={1}
-        width={S-2} height={S-2}
+        x="1.5"
+        y="1.5"
+        width={S - 3}
+        height={S - 3}
         fill="none"
         stroke="#F5C518"
-        strokeWidth={2}
-        strokeOpacity={0.25}
-        rx={8}
+        strokeWidth="3"
+        rx="6"
       />
     </svg>
   );

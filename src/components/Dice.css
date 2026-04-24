@@ -1,139 +1,141 @@
-/* src/components/Dice.css */
+/* src/components/Dice.css — Dark casino theme
+   Dé sombre à points dorés lumineux. */
 
 .dice-wrapper {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-2);
+  gap: 10px;
+  --dice-size: 88px;
+  --dice-accent: #F5C518;
 }
 
 .dice {
-  width: 80px;
-  height: 80px;
-  background: linear-gradient(145deg, #1a1a3e, #0e0e28);
-  border: 2px solid var(--dice-color, #F5C518);
-  border-radius: 16px;
-  position: relative;
-  cursor: pointer;
-  transition: all var(--transition-base);
-  box-shadow:
-    0 0 20px color-mix(in srgb, var(--dice-color, #F5C518) 30%, transparent),
-    0 4px 20px rgba(0,0,0,0.5),
-    inset 0 1px 0 rgba(255,255,255,0.1);
-  user-select: none;
-}
-
-.dice:hover:not(.disabled):not(.rolling) {
-  transform: translateY(-4px) scale(1.05);
-  box-shadow:
-    0 0 35px color-mix(in srgb, var(--dice-color, #F5C518) 50%, transparent),
-    0 8px 30px rgba(0,0,0,0.6),
-    inset 0 1px 0 rgba(255,255,255,0.15);
-}
-
-.dice:active:not(.disabled):not(.rolling) {
-  transform: translateY(-1px) scale(0.98);
-}
-
-.dice.rolling {
-  animation: dice-shake 0.4s ease-in-out infinite;
-  cursor: not-allowed;
-}
-
-@keyframes dice-shake {
-  0%, 100% { transform: rotate(-8deg) scale(1.05); }
-  25% { transform: rotate(8deg) scale(1.08) translateY(-4px); }
-  50% { transform: rotate(-5deg) scale(1.05) translateY(-6px); }
-  75% { transform: rotate(5deg) scale(1.07) translateY(-3px); }
-}
-
-.dice.disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-  border-color: var(--border-subtle);
-  box-shadow: none;
+  width: var(--dice-size);
+  height: var(--dice-size);
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: default;
+  perspective: 600px;
+  outline: none;
 }
 
 .dice-face {
-  position: absolute;
-  inset: 6px;
-  border-radius: 10px;
-  background: rgba(255,255,255,0.03);
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 18%;
+  background:
+    radial-gradient(circle at 32% 28%, #2a2a55 0%, #16163a 55%, #0c0c22 100%);
+  box-shadow:
+    inset 0 -6px 0 rgba(0, 0, 0, 0.45),
+    inset 0 2px 0 rgba(245, 197, 24, 0.25),
+    0 0 18px rgba(245, 197, 24, 0.35),
+    0 8px 18px rgba(0, 0, 0, 0.55);
+  border: 2px solid var(--dice-accent);
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
 }
 
-.dot {
+.dice.is-clickable .dice-face:hover {
+  transform: translateY(-3px) rotate(-4deg);
+  box-shadow:
+    inset 0 -6px 0 rgba(0, 0, 0, 0.45),
+    inset 0 2px 0 rgba(245, 197, 24, 0.35),
+    0 0 28px rgba(245, 197, 24, 0.55),
+    0 14px 24px rgba(0, 0, 0, 0.6);
+}
+
+.dice.is-clickable .dice-face:active {
+  transform: translateY(0) scale(0.96);
+}
+
+.dice.is-disabled .dice-face {
+  opacity: 0.5;
+  border-color: rgba(245, 197, 24, 0.3);
+  box-shadow:
+    inset 0 -6px 0 rgba(0, 0, 0, 0.45),
+    0 4px 10px rgba(0, 0, 0, 0.4);
+}
+
+.dice-dot {
   position: absolute;
-  width: 12px;
-  height: 12px;
+  width: 16%;
+  height: 16%;
+  background: radial-gradient(circle at 35% 30%, #FFE89E 0%, #F5C518 55%, #BF953F 100%);
   border-radius: 50%;
-  background: var(--dice-color, #F5C518);
   transform: translate(-50%, -50%);
-  box-shadow: 0 0 6px color-mix(in srgb, var(--dice-color, #F5C518) 60%, transparent);
-  animation: dot-appear 0.2s ease-out;
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.45),
+    0 0 6px rgba(245, 197, 24, 0.7);
+  animation: dice-dot-in 180ms ease-out both;
 }
 
-@keyframes dot-appear {
-  from { transform: translate(-50%, -50%) scale(0); }
-  to { transform: translate(-50%, -50%) scale(1); }
+@keyframes dice-dot-in {
+  from { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+  to   { transform: translate(-50%, -50%) scale(1); opacity: 1; }
 }
 
-.dice-question {
+.dice-placeholder {
   position: absolute;
   inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.8rem;
-  color: var(--text-muted);
-}
-
-/* Rolling overlay */
-.dice-rolling-overlay {
-  position: absolute;
-  inset: 0;
-  border-radius: 14px;
-  background: rgba(245,197,24,0.05);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.dice-spin-dots {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 4px;
-  padding: 8px;
-}
-
-.spin-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: #F5C518;
-  animation: spin-blink 0.4s ease-in-out infinite;
-}
-
-.spin-dot:nth-child(2) { animation-delay: 0.1s; }
-.spin-dot:nth-child(3) { animation-delay: 0.2s; }
-.spin-dot:nth-child(4) { animation-delay: 0.15s; }
-.spin-dot:nth-child(5) { animation-delay: 0.25s; }
-.spin-dot:nth-child(6) { animation-delay: 0.3s; }
-
-@keyframes spin-blink {
-  0%, 100% { opacity: 0.2; transform: scale(0.8); }
-  50% { opacity: 1; transform: scale(1.2); }
-}
-
-.dice-value-label {
-  font-family: 'Outfit', sans-serif;
-  font-size: var(--text-sm);
+  font-family: 'Outfit', system-ui, sans-serif;
+  font-size: 2.2rem;
   font-weight: 700;
-  color: var(--gold-primary);
-  text-align: center;
+  color: rgba(245, 197, 24, 0.55);
+  text-shadow: 0 0 10px rgba(245, 197, 24, 0.35);
 }
 
-.dice-hint {
-  font-size: var(--text-xs);
-  color: var(--text-muted);
+/* --- Animation de lancer --- */
+.dice.is-rolling .dice-face {
+  animation: dice-roll 700ms linear infinite;
+}
+
+@keyframes dice-roll {
+  0%   { transform: rotate(0deg)   scale(1)    translateY(0); }
+  25%  { transform: rotate(90deg)  scale(1.05) translateY(-6px); }
+  50%  { transform: rotate(180deg) scale(0.96) translateY(-2px); }
+  75%  { transform: rotate(270deg) scale(1.05) translateY(-6px); }
+  100% { transform: rotate(360deg) scale(1)    translateY(0); }
+}
+
+.dice-spinner {
+  position: absolute;
+  inset: 22%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.dice-spinner span {
+  background: radial-gradient(circle at 35% 30%, #FFE89E, #F5C518);
+  border-radius: 50%;
+  animation: dice-spinner 700ms ease-in-out infinite;
+  opacity: 0.3;
+  box-shadow: 0 0 6px rgba(245, 197, 24, 0.6);
+}
+.dice-spinner span:nth-child(2) { animation-delay: 100ms; }
+.dice-spinner span:nth-child(3) { animation-delay: 200ms; }
+.dice-spinner span:nth-child(4) { animation-delay: 300ms; }
+
+@keyframes dice-spinner {
+  0%, 100% { opacity: 0.25; transform: scale(0.8); }
+  50%      { opacity: 1;    transform: scale(1.1); }
+}
+
+/* --- Status text --- */
+.dice-status {
+  font-family: 'Outfit', system-ui, sans-serif;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--dice-accent);
   text-align: center;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-shadow: 0 0 8px rgba(245, 197, 24, 0.3);
+  min-height: 1.2em;
 }

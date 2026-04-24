@@ -227,31 +227,13 @@
 
 .board-container {
   width: 100%;
-  max-width: min(90vmin, 580px);
+  max-width: min(92vmin, 620px);
   aspect-ratio: 1;
   border-radius: var(--radius-xl);
   overflow: hidden;
+  background: linear-gradient(135deg, #0C0C22, #07071A);
+  border: 2px solid rgba(245, 197, 24, 0.35);
   box-shadow: var(--shadow-gold), var(--shadow-card);
-  border: 2px solid rgba(245,197,24,0.2);
-}
-
-/* Token animations */
-.ludo-board-svg .token-movable {
-  animation: token-pulse 1s ease-in-out infinite;
-}
-
-@keyframes token-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.7; }
-}
-
-.ludo-board-svg .token-ring {
-  animation: ring-expand 1s ease-in-out infinite;
-}
-
-@keyframes ring-expand {
-  0%, 100% { r: 20; opacity: 0.6; }
-  50% { r: 24; opacity: 0.3; }
 }
 
 /* Right panel */

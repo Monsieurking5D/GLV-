@@ -11,6 +11,7 @@ export function AuthProvider({ children }) {
 
   // Fetch with retry — le trigger SQL peut être en retard de quelques ms
   const fetchProfile = async (userId, attempt = 1) => {
+    if (attempt === 1) setLoading(true);
     const MAX_ATTEMPTS = 5;
     const DELAY_MS = [0, 300, 700, 1500, 3000];
 

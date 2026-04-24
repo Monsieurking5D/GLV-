@@ -226,10 +226,11 @@ export function moveToken(gameState, tokenId) {
     log.push({ text: `🏁 ${color} a amené un pion à la maison ! (${scores[color]}/4)`, time: Date.now() });
   }
 
-  // Extra tour: dé=6, ou capture
-  if (diceValue === 6 || captures > 0) {
+  // Extra tour: dé=6, capture, ou arrivée d'un pion
+  if (diceValue === 6 || captures > 0 || token.state === TOKEN_STATE.FINISHED) {
     extraTurn = true;
-    log.push({ text: `🎲 ${color} rejoue ! (${diceValue === 6 ? 'six' : 'capture'})`, time: Date.now() });
+    const reason = diceValue === 6 ? 'six' : (captures > 0 ? 'capture' : 'arrivée');
+    log.push({ text: `🎲 ${color} rejoue ! (${reason})`, time: Date.now() });
   }
 
   // Vérifier victoire
