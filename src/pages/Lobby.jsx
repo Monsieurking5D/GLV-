@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import './Lobby.css';
 
-const BET_AMOUNTS = [5, 10, 25, 50, 100];
+const BET_AMOUNTS = [2.50, 5, 10, 25, 50, 100, 250];
 
 const GAME_MODES = [
   {
@@ -62,6 +62,15 @@ export default function Lobby() {
   const [depositAmount, setDepositAmount] = useState(50);
   const [depositLoading, setDepositLoading] = useState(false);
   const [toast, setToast] = useState(null);
+  const [isPrivate, setIsPrivate] = useState(false);
+  const [inviteCode, setInviteCode] = useState('');
+  const [joinCode, setJoinCode] = useState('');
+  const [showPrivateModal, setShowPrivateModal] = useState(false);
+  const [isCreatingPrivate, setIsCreatingPrivate] = useState(false);
+
+  const generateInviteCode = () => {
+    return Math.random().toString(36).substring(2, 8).toUpperCase();
+  };
 
   if (loading) {
     return (
@@ -107,7 +116,7 @@ export default function Lobby() {
     setTimeout(() => setToast(null), 3000);
   };
 
-  const handleStartGame = () => {
+  const handleStartGame = async () => {
     if (!currentMode?.available) return;
 
     if (!isSoloMode && !canBet) {
@@ -115,8 +124,10 @@ export default function Lobby() {
       return;
     }
 
-    // On ne déduit plus la mise ici (Bug #2)
-    // Elle sera déduite à la fin du jeu dans Game.jsx
+    let code = null;
+    if (isPrivate) {
+      code = generateInviteCode();
+    }
 
     // Lancer la partie
     navigate('/game', {
@@ -125,8 +136,21 @@ export default function Lobby() {
         bet: isSoloMode ? 0 : selectedBet,
         players: currentMode.players,
         difficulty: selectedDifficulty,
+        isPrivate,
+        inviteCode: code,
       }
     });
+  };
+
+  const handleJoinPrivate = () => {
+    if (!joinCode || joinCode.length < 6) {
+      showToast('⚠️ Veuillez entrer un code valide.', 'error');
+      return;
+    }
+    
+    // Logique de recherche de partie via Supabase (simulation pour l'instant)
+    showToast(`🔍 Recherche de la partie ${joinCode}...`);
+    // navigate('/game', { state: { joinCode } });
   };
 
   const handleDeposit = async () => {
@@ -242,16 +266,27 @@ export default function Lobby() {
             {/* Bet amounts (si pas solo) */}
             {!isSoloMode && (
               <div className="bet-config">
-                <div className="lobby-section-title">💰 Choisir votre mise</div>
+                <div className="lobby-section-title">💰 Configuration de la mise</div>
+                
+                <div className="private-toggle-card" onClick={() => setIsPrivate(!isPrivate)}>
+                   <div className="private-info">
+                     <span className="private-label">Partie Privée</span>
+                     <span className="private-desc">Générez un code pour inviter vos amis</span>
+                   </div>
+                   <div className={`toggle-switch ${isPrivate ? 'on' : ''}`}>
+                     <div className="toggle-handle" />
+                   </div>
+                </div>
+
                 <div className="bet-amounts">
                   {BET_AMOUNTS.map(amount => (
                     <button
                       key={amount}
                       className={`bet-amount-btn ${selectedBet === amount ? 'selected' : ''} ${balance < amount ? 'insufficient' : ''}`}
                       onClick={() => setSelectedBet(amount)}
-                      id={`bet-${amount}`}
+                      id={`bet-${amount.toString().replace('.', '-')}`}
                     >
-                      {amount}€
+                      {amount.toFixed(2)}€
                       {balance < amount && <span className="insufficient-icon">⚠</span>}
                     </button>
                   ))}
@@ -310,8 +345,10 @@ export default function Lobby() {
             >
               {isSoloMode ? (
                 '🤖 Jouer contre l\'IA'
+              ) : isPrivate ? (
+                `🔒 Créer la partie privée — ${selectedBet.toFixed(2)}€`
               ) : canBet ? (
-                `🎲 Lancer la partie — Mise ${selectedBet}€`
+                `🎲 Lancer la partie — Mise ${selectedBet.toFixed(2)}€`
               ) : (
                 `💰 Déposer pour jouer`
               )}
@@ -321,6 +358,26 @@ export default function Lobby() {
               <p className="insufficient-warning">
                 ⚠️ Solde insuffisant. Déposez des fonds pour jouer avec cette mise.
               </p>
+            )}
+
+            {/* Join private */}
+            {!isSoloMode && (
+              <div className="join-private-section">
+                <div className="divider-text">OU</div>
+                <div className="join-private-card">
+                  <input 
+                    type="text" 
+                    placeholder="Code d'invitation" 
+                    className="input"
+                    value={joinCode}
+                    onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+                    maxLength={6}
+                  />
+                  <button className="btn btn-ghost" onClick={handleJoinPrivate}>
+                    Rejoindre
+                  </button>
+                </div>
+              </div>
             )}
           </div>
 

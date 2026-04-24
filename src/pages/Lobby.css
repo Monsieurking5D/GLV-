@@ -467,6 +467,86 @@
   text-align: center;
 }
 
+/* Private Games */
+.private-toggle-card {
+  background: var(--bg-glass);
+  border: 1.5px solid var(--border-glass);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-4);
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.private-toggle-card:hover {
+  background: var(--bg-glass-hover);
+  border-color: rgba(245,197,24,0.3);
+}
+
+.private-label {
+  display: block;
+  font-family: 'Outfit', sans-serif;
+  font-size: var(--text-base);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.private-desc {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+
+.toggle-switch {
+  width: 44px;
+  height: 24px;
+  background: var(--text-muted);
+  border-radius: 12px;
+  position: relative;
+  transition: background 0.3s ease;
+}
+
+.toggle-switch.on {
+  background: var(--gold-primary);
+}
+
+.toggle-handle {
+  width: 18px;
+  height: 18px;
+  background: white;
+  border-radius: 50%;
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  transition: transform 0.3s ease;
+}
+
+.toggle-switch.on .toggle-handle {
+  transform: translateX(20px);
+}
+
+.join-private-section {
+  margin-top: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.join-private-card {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.join-private-card .input {
+  flex: 1;
+  text-align: center;
+  letter-spacing: 0.1em;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
 /* Responsive */
 @media (max-width: 1024px) {
   .lobby-columns { grid-template-columns: 1fr; }

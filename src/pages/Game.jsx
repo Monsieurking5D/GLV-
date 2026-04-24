@@ -28,7 +28,7 @@ export default function Game() {
   const navigate = useNavigate();
   const { user, profile, updateProfile, addTransaction } = useAuth();
 
-  const { mode = '1v1', bet = 0, difficulty = 'medium' } = location.state || {};
+  const { mode = '1v1', bet = 0, difficulty = 'medium', isPrivate = false, inviteCode = null } = location.state || {};
 
   // Build players list
   const buildPlayers = useCallback(() => {
@@ -54,6 +54,9 @@ export default function Game() {
   const [showWinner, setShowWinner] = useState(false);
   const [showQuitConfirm, setShowQuitConfirm] = useState(false);
   const [toast, setToast] = useState(null);
+  const [activeTab, setActiveTab] = useState('chat'); // 'log' or 'chat'
+  const [messages, setMessages] = useState([]);
+  const [newMessage, setNewMessage] = useState('');
   
   const logRef = useRef(null);
   const aiTimeoutRef = useRef(null);
@@ -82,7 +85,9 @@ export default function Game() {
             bet_amount: bet,
             difficulty,
             status: 'active',
-            state: gameState
+            state: gameState,
+            is_private: isPrivate,
+            invite_code: inviteCode
           }])
           .select()
           .single();
@@ -116,12 +121,43 @@ export default function Game() {
     persistGame();
   }, [gameState]);
 
-  // Auto-scroll log
+  // Chat: Charger les messages initiaux et écouter en temps réel
   useEffect(() => {
-    if (logRef.current) {
-      logRef.current.scrollTop = logRef.current.scrollHeight;
-    }
-  }, [gameState.log]);
+    if (!gameIdRef.current) return;
+
+    const fetchMessages = async () => {
+      const { data } = await supabase
+        .from('game_messages')
+        .select('*')
+        .eq('game_id', gameIdRef.current)
+        .order('created_at', { ascending: true });
+      if (data) setMessages(data);
+    };
+
+    fetchMessages();
+
+    const channel = supabase
+      .channel(`game_chat:${gameIdRef.current}`)
+      .on('postgres_changes', { 
+        event: 'INSERT', 
+        schema: 'public', 
+        table: 'game_messages',
+        filter: `game_id=eq.${gameIdRef.current}` 
+      }, (payload) => {
+        setMessages(prev => [...prev, payload.new]);
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [gameIdRef.current]);
+
+  // Auto-scroll chat & log
+  const chatEndRef = useRef(null);
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, activeTab]);
 
   const handleGameEnd = useCallback(async (winnerColor) => {
     if (bet > 0) {
@@ -230,6 +266,25 @@ export default function Game() {
     navigate('/lobby');
   };
 
+  const handleSendMessage = async (e) => {
+    e.preventDefault();
+    if (!newMessage.trim() || !user || !gameIdRef.current) return;
+
+    const msg = newMessage.trim();
+    setNewMessage('');
+
+    try {
+      await supabase.from('game_messages').insert([{
+        game_id: gameIdRef.current,
+        user_id: user.id,
+        username: profile?.username || 'Joueur',
+        content: msg
+      }]);
+    } catch (err) {
+      console.error("Erreur envoi message:", err);
+    }
+  };
+
   const handleRestart = () => {
     clearTimeout(aiTimeoutRef.current);
     setGameState(createInitialGameState(buildPlayers(), bet));
@@ -270,6 +325,15 @@ export default function Game() {
             <span>🔄</span>
             <span>Tour #{gameState.turn}</span>
           </div>
+          {isPrivate && (
+            <div className="game-pill invite-pill" onClick={() => {
+              navigator.clipboard.writeText(inviteCode);
+              showToast("📋 Code copié !");
+            }}>
+              <span>🔑 Code: {inviteCode}</span>
+              <span className="copy-hint">Copier</span>
+            </div>
+          )}
         </div>
 
         <button
@@ -366,21 +430,67 @@ export default function Game() {
           </div>
         </div>
 
-        {/* Right panel — Log */}
+        {/* Right panel — Log & Chat */}
         <div className="game-right-panel">
-          <div className="log-header">📋 Journal de partie</div>
-          <div className="game-log" ref={logRef}>
-            {displayLog.length === 0 ? (
-              <div className="log-empty">La partie commence...</div>
+          <div className="right-tabs">
+            <button 
+              className={`tab-btn ${activeTab === 'chat' ? 'active' : ''}`}
+              onClick={() => setActiveTab('chat')}
+            >
+              💬 Chat
+            </button>
+            <button 
+              className={`tab-btn ${activeTab === 'log' ? 'active' : ''}`}
+              onClick={() => setActiveTab('log')}
+            >
+              📋 Journal
+            </button>
+          </div>
+
+          <div className="tab-content">
+            {activeTab === 'log' ? (
+              <div className="game-log" ref={logRef}>
+                {displayLog.length === 0 ? (
+                  <div className="log-empty">La partie commence...</div>
+                ) : (
+                  displayLog.map((entry, i) => (
+                    <div key={i} className="log-entry">
+                      <span className="log-time">
+                        {new Date(entry.time).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                      <span className="log-text">{entry.text}</span>
+                    </div>
+                  ))
+                )}
+              </div>
             ) : (
-              displayLog.map((entry, i) => (
-                <div key={i} className="log-entry">
-                  <span className="log-time">
-                    {new Date(entry.time).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-                  </span>
-                  <span className="log-text">{entry.text}</span>
+              <div className="chat-container">
+                <div className="chat-messages">
+                  {messages.length === 0 ? (
+                    <div className="log-empty">Pas encore de messages.</div>
+                  ) : (
+                    messages.map((msg, i) => (
+                      <div key={msg.id || i} className={`chat-bubble ${msg.user_id === user?.id ? 'mine' : ''}`}>
+                        <div className="chat-author">{msg.username}</div>
+                        <div className="chat-content">{msg.content}</div>
+                      </div>
+                    ))
+                  )}
+                  <div ref={chatEndRef} />
                 </div>
-              ))
+                <form className="chat-input-form" onSubmit={handleSendMessage}>
+                  <input 
+                    type="text" 
+                    placeholder="Votre message..." 
+                    className="input chat-input"
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                  />
+                  <button type="submit" className="chat-send-btn">
+                    ✈️
+                  </button>
+                </form>
+              </div>
             )}
           </div>
 

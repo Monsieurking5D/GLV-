@@ -348,8 +348,8 @@ a { text-decoration: none; color: inherit; }
 
 /* --- Animations --- */
 @keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-12px); }
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(0, -12px, 0); }
 }
 
 @keyframes pulse-gold {
