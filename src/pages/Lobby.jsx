@@ -18,18 +18,18 @@ const GAME_MODES = [
   },
   {
     id: '1v1v1',
-    label: '1 vs 1 vs 1',
+    label: 'La Triade',
     icon: '🔺',
-    desc: 'Triuel à 3 joueurs. 3× mise au gagnant.',
+    desc: 'Triuel à 3 joueurs. 3× votre mise au gagnant.',
     players: 3,
     multiplier: '3×',
     available: false, // Grisé V2
   },
   {
     id: '1v1v1v1',
-    label: '1 vs 1 vs 1 vs 1',
+    label: 'L\'Arène',
     icon: '◆',
-    desc: 'Grand Slam à 4 joueurs. 4× mise !',
+    desc: 'Bataille à 4 joueurs. 4× votre mise !',
     players: 4,
     multiplier: '4×',
     available: false, // Grisé V2
