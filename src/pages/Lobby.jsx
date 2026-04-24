@@ -155,18 +155,27 @@ export default function Lobby() {
 
   const handleDeposit = async () => {
     setDepositLoading(true);
-    // TODO: Remplacer cette fausse attente par une intégration de paiement réelle (Stripe/PayPal) post-MVP.
-    await new Promise(r => setTimeout(r, 1200)); // Simulation
 
-    addTransaction({
-      type: 'deposit',
-      amount: depositAmount,
-      description: `💳 Dépôt de ${depositAmount}€ (TEST)`,
-    });
+    // Yield to main thread to show loading state immediately (Fix INP)
+    await new Promise(resolve => setTimeout(resolve, 0));
 
-    setDepositLoading(false);
-    setShowDepositModal(false);
-    showToast(`✅ +${depositAmount}€ ajoutés à votre portefeuille !`);
+    try {
+      // TODO: Remplacer cette fausse attente par une intégration de paiement réelle
+      await new Promise(r => setTimeout(r, 1200)); 
+
+      await addTransaction({
+        type: 'deposit',
+        amount: depositAmount,
+        description: `💳 Dépôt de ${depositAmount}€ (TEST)`,
+      });
+
+      setDepositLoading(false);
+      setShowDepositModal(false);
+      showToast(`✅ +${depositAmount}€ ajoutés à votre portefeuille !`);
+    } catch (error) {
+      setDepositLoading(false);
+      showToast("❌ Erreur lors du dépôt.", "error");
+    }
   };
 
   const transactions = profile?.transactions?.slice(0, 5) || [];
