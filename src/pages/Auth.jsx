@@ -274,8 +274,15 @@ const RegisterForm = React.memo(({
 export default function Auth() {
   const [searchParams] = useSearchParams();
   const [mode, setMode] = useState(searchParams.get('mode') || 'login');
-  
-  // États individuels pour la performance (INP)
+
+  // Synchroniser le mode avec l'URL (pour que les boutons de la Navbar fonctionnent)
+  useEffect(() => {
+    const urlMode = searchParams.get('mode');
+    if (urlMode && urlMode !== mode) {
+      setMode(urlMode);
+    }
+  }, [searchParams, mode]);
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');

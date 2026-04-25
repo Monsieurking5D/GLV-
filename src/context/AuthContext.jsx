@@ -45,6 +45,9 @@ export function AuthProvider({ children }) {
       setProfile({
         ...userProfile,
         walletBalance: userProfile.wallet_balance,
+        bonusBalance: userProfile.bonus_balance || 0,
+        wageringRequirement: userProfile.wagering_requirement || 0,
+        withdrawableBalance: Math.max(0, (userProfile.wallet_balance || 0) - (userProfile.bonus_balance || 0)),
         gamesPlayed: userProfile.games_played,
         gamesWon: userProfile.games_won,
         transactions: transactions || []

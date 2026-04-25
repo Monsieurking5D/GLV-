@@ -8,6 +8,8 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   email TEXT NOT NULL,
   avatar_url TEXT,
   wallet_balance NUMERIC DEFAULT 0, -- Le solde réel est géré par les transactions
+  bonus_balance NUMERIC DEFAULT 0, -- Montant du bonus actuellement bloqué
+  wagering_requirement NUMERIC DEFAULT 0, -- Montant restant à miser pour débloquer le bonus
   referred_by UUID REFERENCES public.profiles(id), -- Qui a parrainé cet utilisateur
   games_played INTEGER DEFAULT 0,
   games_won INTEGER DEFAULT 0,
@@ -68,13 +70,15 @@ BEGIN
   END IF;
 
   -- 2. Création du profil
-  INSERT INTO public.profiles (id, username, email, wallet_balance, referred_by)
+  INSERT INTO public.profiles (id, username, email, wallet_balance, referred_by, bonus_balance, wagering_requirement)
   VALUES (
     new.id,
     COALESCE(new.raw_user_meta_data->>'username', 'Joueur_' || left(new.id::text, 5)),
     new.email,
     0,
-    referrer_id
+    referrer_id,
+    0,
+    0
   );
   
   -- 3. Créditer le bonus de bienvenue (5€)
@@ -84,7 +88,7 @@ BEGIN
   -- 4. Créditer le bonus de parrainage (5€) au parrain s'il existe
   IF referrer_id IS NOT NULL THEN
     INSERT INTO public.transactions (user_id, amount, type, description)
-    VALUES (referrer_id, 5, 'deposit', '🤝 Bonus parrainage (Nouveau joueur: ' || COALESCE(new.raw_user_meta_data->>'username', 'Inconnu') || ')');
+    VALUES (referrer_id, 5, 'deposit', '🤝 Bonus parrainage');
   END IF;
   
   RETURN new;
@@ -101,9 +105,31 @@ CREATE TRIGGER on_auth_user_created
 CREATE OR REPLACE FUNCTION public.update_wallet_balance()
 RETURNS trigger AS $$
 BEGIN
+  -- 1. Mise à jour du solde total
   UPDATE public.profiles
   SET wallet_balance = wallet_balance + NEW.amount
   WHERE id = NEW.user_id;
+
+  -- 2. Si c'est un bonus (détecté par "Bonus" dans la description)
+  IF NEW.description LIKE '%Bonus%' AND NEW.amount > 0 THEN
+    UPDATE public.profiles
+    SET 
+      bonus_balance = bonus_balance + NEW.amount,
+      wagering_requirement = wagering_requirement + (NEW.amount * 2)
+    WHERE id = NEW.user_id;
+  END IF;
+
+  -- 3. Si c'est un pari (bet), on réduit le wagering requirement
+  IF NEW.type = 'bet' THEN
+    UPDATE public.profiles
+    SET wagering_requirement = GREATEST(0, wagering_requirement - ABS(NEW.amount))
+    WHERE id = NEW.user_id;
+  END IF;
+
+  -- 4. Si le wagering est terminé, on libère le bonus
+  UPDATE public.profiles
+  SET bonus_balance = 0
+  WHERE id = NEW.user_id AND wagering_requirement <= 0;
 
   RETURN NEW;
 END;

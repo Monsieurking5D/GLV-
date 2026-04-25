@@ -201,9 +201,14 @@ export default function Lobby() {
           <div className="lobby-header-right">
             <div className="balance-card">
               <div className="balance-icon">💰</div>
-              <div>
+              <div style={{ position: 'relative' }}>
                 <span className="balance-label">Solde</span>
                 <span className="balance-amount">{balance.toFixed(2)}€</span>
+                {profile?.bonusBalance > 0 && (
+                  <div className="bonus-badge-mini" title={`Wagering: ${profile.wageringRequirement.toFixed(2)}€ restants`}>
+                    🎁 {profile.bonusBalance.toFixed(0)}€ bloqués
+                  </div>
+                )}
               </div>
               <button
                 className="btn btn-gold btn-sm"

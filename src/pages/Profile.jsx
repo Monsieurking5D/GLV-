@@ -57,7 +57,31 @@ export default function Profile() {
         <div style={{ background: 'rgba(255,255,255,0.02)', padding: 'var(--space-6)', borderRadius: 'var(--radius-md)', marginBottom: 'var(--space-6)' }}>
           <p style={{ color: 'var(--text-secondary)', marginBottom: 'var(--space-3)' }}>Nom d'utilisateur : <strong style={{ color: 'var(--text-primary)' }}>{profile?.username || 'Joueur anonyme'}</strong></p>
           <p style={{ color: 'var(--text-secondary)', marginBottom: 'var(--space-3)' }}>Email : <strong style={{ color: 'var(--text-primary)' }}>{user?.email || profile?.email || 'N/A'}</strong></p>
-          <p style={{ color: 'var(--text-secondary)' }}>Solde actuel : <strong className="text-gold">{(profile?.walletBalance || 0).toFixed(2)}€</strong></p>
+          <div style={{ marginTop: 'var(--space-4)', paddingTop: 'var(--space-4)', borderTop: '1px solid var(--border-subtle)' }}>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: 'var(--space-1)' }}>Solde total : <strong className="text-gold">{(profile?.walletBalance || 0).toFixed(2)}€</strong></p>
+            {profile?.bonusBalance > 0 && (
+              <>
+                <p style={{ color: 'var(--text-muted)', fontSize: 'var(--text-sm)', marginBottom: 'var(--space-1)' }}>
+                  Dont bonus bloqué : <span style={{ color: '#F87171' }}>{profile.bonusBalance.toFixed(2)}€</span>
+                </p>
+                <p style={{ color: 'var(--text-muted)', fontSize: 'var(--text-sm)', marginBottom: 'var(--space-3)' }}>
+                  Mise restante nécessaire : <strong style={{ color: 'var(--text-primary)' }}>{profile.wageringRequirement.toFixed(2)}€</strong>
+                </p>
+                <div style={{ width: '100%', height: 6, background: 'var(--bg-deep)', borderRadius: 3, overflow: 'hidden', marginBottom: 'var(--space-1)' }}>
+                  <div style={{ 
+                    width: `${Math.min(100, Math.max(5, 100 - (profile.wageringRequirement / (profile.bonusBalance * 2) * 100)))}%`, 
+                    height: '100%', 
+                    background: 'var(--gold-primary)',
+                    transition: 'width 0.5s ease'
+                  }} />
+                </div>
+                <p style={{ color: 'var(--text-muted)', fontSize: '10px' }}>Progression du déblocage</p>
+              </>
+            )}
+            <p style={{ color: 'var(--text-secondary)', marginTop: 'var(--space-3)' }}>
+              Solde retirable : <strong style={{ color: 'var(--green-light)' }}>{(profile?.withdrawableBalance || 0).toFixed(2)}€</strong>
+            </p>
+          </div>
         </div>
 
         <div style={{ 
