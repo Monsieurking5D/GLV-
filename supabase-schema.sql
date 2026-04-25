@@ -152,21 +152,36 @@ CREATE TABLE IF NOT EXISTS public.games (
   bet_amount NUMERIC DEFAULT 0,
   mode TEXT,
   difficulty TEXT,
+  is_private BOOLEAN DEFAULT false,
+  invite_code TEXT,
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now(),
   CONSTRAINT check_game_status CHECK (status IN ('active', 'finished'))
 );
 
--- Index pour les parties actives
+-- Index pour les parties actives et codes d'invitation
 CREATE INDEX IF NOT EXISTS idx_games_user_id_status ON public.games(user_id, status);
+CREATE INDEX IF NOT EXISTS idx_games_invite_code ON public.games(invite_code) WHERE status = 'active';
+
+-- Table des messages de jeu (Chat)
+CREATE TABLE IF NOT EXISTS public.game_messages (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  game_id UUID REFERENCES public.games(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  username TEXT,
+  content TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
 
 -- Sécurisation
 ALTER TABLE public.games ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.game_messages ENABLE ROW LEVEL SECURITY;
 
-DROP POLICY IF EXISTS "Les utilisateurs peuvent voir leurs propres parties" ON public.games;
-CREATE POLICY "Les utilisateurs peuvent voir leurs propres parties"
+-- Politiques pour les parties
+DROP POLICY IF EXISTS "Lecture des parties par propriétaire ou via code" ON public.games;
+CREATE POLICY "Lecture des parties par propriétaire ou via code"
   ON public.games FOR SELECT
-  USING (auth.uid() = user_id);
+  USING (auth.uid() = user_id OR (status = 'active' AND invite_code IS NOT NULL));
 
 DROP POLICY IF EXISTS "Les utilisateurs peuvent inserer leurs parties" ON public.games;
 CREATE POLICY "Les utilisateurs peuvent inserer leurs parties"
@@ -177,3 +192,14 @@ DROP POLICY IF EXISTS "Les utilisateurs peuvent mettre a jour leurs parties" ON 
 CREATE POLICY "Les utilisateurs peuvent mettre a jour leurs parties"
   ON public.games FOR UPDATE
   USING (auth.uid() = user_id);
+
+-- Politiques pour le Chat
+DROP POLICY IF EXISTS "Lecture des messages pour tous" ON public.game_messages;
+CREATE POLICY "Lecture des messages pour tous"
+  ON public.game_messages FOR SELECT
+  USING (true);
+
+DROP POLICY IF EXISTS "Insertion des messages par l'auteur" ON public.game_messages;
+CREATE POLICY "Insertion des messages par l'auteur"
+  ON public.game_messages FOR INSERT
+  WITH CHECK (auth.uid() = user_id);

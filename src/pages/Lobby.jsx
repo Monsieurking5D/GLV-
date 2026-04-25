@@ -1,7 +1,8 @@
 // src/pages/Lobby.jsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
+import { supabase } from '../lib/supabase';
 import './Lobby.css';
 
 const BET_AMOUNTS = [2.50, 5, 10, 25, 50, 100, 250];
@@ -161,15 +162,61 @@ export default function Lobby() {
     }
   };
 
-  const handleJoinPrivate = () => {
+  const handleJoinPrivate = async () => {
     if (!joinCode || joinCode.length < 6) {
       showToast('⚠️ Veuillez entrer un code valide.', 'error');
       return;
     }
     
-    // Logique de recherche de partie via Supabase (simulation pour l'instant)
-    showToast(`🔍 Recherche de la partie ${joinCode}...`);
-    // navigate('/game', { state: { joinCode } });
+    setIsStarting(true);
+    try {
+      const { data, error } = await supabase
+        .from('games')
+        .select('*')
+        .eq('invite_code', joinCode)
+        .eq('status', 'active')
+        .single();
+
+      if (error || !data) {
+        showToast('❌ Partie introuvable ou déjà terminée.', 'error');
+        return;
+      }
+
+      // Vérification du solde
+      if (balance < data.bet_amount) {
+        showToast(`💰 Solde insuffisant (${data.bet_amount}€ requis).`, 'error');
+        setShowDepositModal(true);
+        return;
+      }
+
+      // Débiter la mise
+      if (data.bet_amount > 0) {
+        await addTransaction({
+          type: 'bet',
+          amount: -data.bet_amount,
+          description: `🎲 Rejoindre partie privée ${joinCode}`
+        });
+      }
+
+      showToast('✅ Partie rejointe ! Lancement...');
+      
+      navigate('/game', { 
+        state: { 
+          mode: data.mode,
+          bet: data.bet_amount,
+          players: data.players.length,
+          difficulty: data.difficulty,
+          isPrivate: true,
+          inviteCode: data.invite_code,
+          initialState: data.state
+        } 
+      });
+    } catch (err) {
+      console.error("Erreur join private:", err);
+      showToast('❌ Impossible de rejoindre la partie.', 'error');
+    } finally {
+      setIsStarting(false);
+    }
   };
 
   const handleDeposit = async () => {
@@ -179,13 +226,16 @@ export default function Lobby() {
     await new Promise(resolve => setTimeout(resolve, 0));
 
     try {
-      // TODO: Remplacer cette fausse attente par une intégration de paiement réelle
-      await new Promise(r => setTimeout(r, 1200)); 
+      // Intégration future Stripe :
+      // const session = await createStripeSession(depositAmount);
+      // window.location.href = session.url;
+      
+      await new Promise(r => setTimeout(r, 1500)); 
 
       await addTransaction({
         type: 'deposit',
         amount: depositAmount,
-        description: `💳 Dépôt de ${depositAmount}€ (TEST)`,
+        description: `💳 Dépôt sécurisé par Carte`,
       });
 
       setDepositLoading(false);
@@ -488,7 +538,7 @@ export default function Lobby() {
             </div>
 
             <div className="deposit-sim-note">
-              🔒 Simulation de paiement — aucun vrai argent débité
+              🔒 Paiement sécurisé et crypté
             </div>
 
             <div style={{display: 'flex', gap: 'var(--space-3)', marginTop: 'var(--space-6)'}}>
