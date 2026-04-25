@@ -28,7 +28,16 @@ export default function Game() {
   const navigate = useNavigate();
   const { user, profile, updateProfile, addTransaction } = useAuth();
 
-  const { mode = '1v1', bet = 0, difficulty = 'medium', isPrivate = false, inviteCode = null } = location.state || {};
+  const { 
+    mode = '1v1', 
+    bet = 0, 
+    difficulty = 'medium', 
+    isPrivate = false, 
+    inviteCode = null,
+    players: initialPlayers = [],
+    gameId: existingGameId = null,
+    participantIds: initialParticipantIds = []
+  } = location.state || {};
 
   // Build players list
   const buildPlayers = useCallback(() => {
@@ -45,9 +54,13 @@ export default function Game() {
     return [human, makeAIPlayer('blue', 'IA', difficulty)];
   }, [mode, difficulty]);
 
-  const [players] = useState(buildPlayers);
+  const [players] = useState(() => {
+    if (initialPlayers.length > 0) return initialPlayers;
+    return buildPlayers();
+  });
+  
   const [gameState, setGameState] = useState(() =>
-    createInitialGameState(buildPlayers(), bet)
+    createInitialGameState(players, bet)
   );
   
   const [diceRolling, setDiceRolling] = useState(false);
@@ -62,20 +75,24 @@ export default function Game() {
   const logRef = useRef(null);
   const aiTimeoutRef = useRef(null);
   const winnerTimeoutRef = useRef(null);
-  const gameIdRef = useRef(null);
+  const gameIdRef = useRef(existingGameId);
+  const lastSyncRef = useRef(0); // Anti-boucle de sync
 
   const currentPlayer = gameState.players[gameState.currentPlayerIndex];
-  const isHumanTurn = !currentPlayer?.isAI;
-
+  // Un tour est humain si le joueur n'est pas une IA ET que son ID correspond à l'utilisateur actuel
+  const isHumanTurn = !currentPlayer?.isAI && currentPlayer?.id === user?.id;
+  // Seul le créateur de la partie gère les IA pour éviter les conflits
+  const canProcessAI = !existingGameId; 
+  
   const showToast = (msg) => {
     setToast(msg);
     setTimeout(() => setToast(null), 2500);
   };
 
-  // Persistence: Sauvegarder la partie initialement
+  // Persistence: Sauvegarder la partie initialement (si créateur)
   useEffect(() => {
     const initGame = async () => {
-      if (!user) return;
+      if (!user || existingGameId) return;
       try {
         const { data, error } = await supabase
           .from('games')
@@ -88,7 +105,8 @@ export default function Game() {
             status: 'active',
             state: gameState,
             is_private: isPrivate,
-            invite_code: inviteCode
+            invite_code: inviteCode,
+            participant_ids: initialParticipantIds.length > 0 ? initialParticipantIds : [user.id]
           }])
           .select()
           .single();
@@ -106,6 +124,14 @@ export default function Game() {
   useEffect(() => {
     const persistGame = async () => {
       if (!gameIdRef.current) return;
+      
+      // On ne persist que si c'est notre tour (pour éviter d'écraser l'état)
+      // OU si c'est le tour de l'IA et qu'on est l'owner
+      const isMyTurn = currentPlayer?.id === user?.id;
+      const shouldPersist = isMyTurn || (currentPlayer?.isAI && canProcessAI);
+      
+      if (!shouldPersist) return;
+
       try {
         await supabase
           .from('games')
@@ -120,7 +146,38 @@ export default function Game() {
       }
     };
     persistGame();
-  }, [gameState]);
+  }, [gameState, user?.id, currentPlayer?.id, canProcessAI]);
+
+  // Real-time: Écouter les changements d'état du jeu
+  useEffect(() => {
+    if (!gameIdRef.current) return;
+
+    const channel = supabase
+      .channel(`game_realtime:${gameIdRef.current}`)
+      .on('postgres_changes', { 
+        event: 'UPDATE', 
+        schema: 'public', 
+        table: 'games',
+        filter: `id=eq.${gameIdRef.current}` 
+      }, (payload) => {
+        // On ne synchronise que si l'état est différent (pour éviter les boucles)
+        // Et surtout si ce n'est pas nous qui venons de jouer
+        const isMyTurn = currentPlayer?.id === user?.id;
+        const isAITurn = currentPlayer?.isAI;
+        
+        if (payload.new.state && JSON.stringify(payload.new.state) !== JSON.stringify(gameState)) {
+            // Si c'est le tour de l'autre ou de l'IA (pour les non-owners), on sync
+            if (!isMyTurn && !(isAITurn && canProcessAI)) {
+              setGameState(payload.new.state);
+            }
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [gameIdRef.current, gameState, user?.id, currentPlayer?.id, canProcessAI]);
 
   // Chat: Charger les messages initiaux et écouter en temps réel
   useEffect(() => {
@@ -166,7 +223,8 @@ export default function Game() {
 
     if (bet > 0) {
       try {
-        if (winnerColor === 'red') {
+        const myPlayer = players.find(p => p.id === user?.id);
+        if (winnerColor === myPlayer?.color) {
           // Nouveau système de commission : 10% plafonné à 3€
           const potTotal = bet * gameState.players.length;
           const commission = Math.min(potTotal * 0.10, 3.00);
@@ -183,11 +241,11 @@ export default function Game() {
             gamesWon: (profile?.gamesWon || 0) + 1,
           });
         } else {
-          // Perte: On enregistre la perte de la mise (Bug #1)
+          // La mise a déjà été débitée au lancement dans Lobby.jsx — on enregistre juste l'événement
           await addTransaction({
             type: 'loss',
-            amount: -bet,
-            description: `😔 Partie perdue (${mode})`,
+            amount: 0,
+            description: `😔 Partie perdue — mise de ${bet}€ (${mode})`,
           });
           await updateProfile({
             gamesPlayed: (profile?.gamesPlayed || 0) + 1,
@@ -223,6 +281,8 @@ export default function Game() {
   // AI turn
   useEffect(() => {
     if (!currentPlayer?.isAI || gameState.state !== GAME_STATE.PLAYING || gameState.winner) return;
+    // Seul le créateur (ou premier participant) traite l'IA pour éviter les coups multiples
+    if (!canProcessAI) return;
 
     if (!gameState.diceRolled) {
       // AI rolls dice
@@ -304,7 +364,8 @@ export default function Game() {
     setDiceRolling(false);
   };
 
-  const winnerIsHuman = gameState.winner === 'red';
+  const myPlayer = players.find(p => p.id === user?.id);
+  const winnerIsHuman = gameState.winner === myPlayer?.color;
   const potTotal = bet * gameState.players.length;
   const commission = Math.min(potTotal * 0.10, 3.00);
   const winnings = winnerIsHuman ? (potTotal - commission).toFixed(2) : 0;

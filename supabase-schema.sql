@@ -151,9 +151,8 @@ CREATE TABLE IF NOT EXISTS public.games (
   winner TEXT,
   bet_amount NUMERIC DEFAULT 0,
   mode TEXT,
-  difficulty TEXT,
-  is_private BOOLEAN DEFAULT false,
-  invite_code TEXT,
+  max_players INTEGER DEFAULT 2,
+  participant_ids UUID[] DEFAULT '{}',
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now(),
   CONSTRAINT check_game_status CHECK (status IN ('active', 'finished'))
@@ -181,17 +180,17 @@ ALTER TABLE public.game_messages ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Lecture des parties par propriétaire ou via code" ON public.games;
 CREATE POLICY "Lecture des parties par propriétaire ou via code"
   ON public.games FOR SELECT
-  USING (auth.uid() = user_id OR (status = 'active' AND invite_code IS NOT NULL));
+  USING (auth.uid() = user_id OR auth.uid() = ANY(participant_ids) OR (status = 'active' AND invite_code IS NOT NULL));
 
 DROP POLICY IF EXISTS "Les utilisateurs peuvent inserer leurs parties" ON public.games;
 CREATE POLICY "Les utilisateurs peuvent inserer leurs parties"
   ON public.games FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
-DROP POLICY IF EXISTS "Les utilisateurs peuvent mettre a jour leurs parties" ON public.games;
-CREATE POLICY "Les utilisateurs peuvent mettre a jour leurs parties"
+DROP POLICY IF EXISTS "Les participants peuvent mettre a jour leurs parties" ON public.games;
+CREATE POLICY "Les participants peuvent mettre a jour leurs parties"
   ON public.games FOR UPDATE
-  USING (auth.uid() = user_id);
+  USING (auth.uid() = user_id OR auth.uid() = ANY(participant_ids));
 
 -- Politiques pour le Chat
 DROP POLICY IF EXISTS "Lecture des messages pour tous" ON public.game_messages;

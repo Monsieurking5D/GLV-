@@ -143,15 +143,24 @@ export default function Lobby() {
         code = generateInviteCode();
       }
 
+      const initialPlayers = [
+        { id: profile.id, name: profile.username, color: 'red', isAI: false }
+      ];
+
+      if (isSoloMode) {
+        initialPlayers.push({ id: 'ai_blue', name: 'IA', color: 'blue', isAI: true, difficulty: selectedDifficulty });
+      }
+
       // Lancer la partie
       navigate('/game', {
         state: {
           mode: selectedMode,
           bet: isSoloMode ? 0 : selectedBet,
-          players: currentMode.players,
+          players: initialPlayers,
           difficulty: selectedDifficulty,
           isPrivate,
           inviteCode: code,
+          participantIds: [profile.id]
         }
       });
     } catch (err) {
@@ -198,17 +207,41 @@ export default function Lobby() {
         });
       }
 
+      // Mettre à jour la partie avec le nouveau participant
+      const newParticipantIds = [...(data.participant_ids || []), profile.id];
+      const updatedPlayers = [...data.players];
+      
+      // On remplace la première IA disponible par le joueur humain
+      const aiIndex = updatedPlayers.findIndex(p => p.isAI);
+      if (aiIndex !== -1) {
+        updatedPlayers[aiIndex] = {
+          id: profile.id,
+          name: profile.username,
+          color: updatedPlayers[aiIndex].color,
+          isAI: false
+        };
+      }
+
+      await supabase
+        .from('games')
+        .update({ 
+          participant_ids: newParticipantIds,
+          players: updatedPlayers
+        })
+        .eq('id', data.id);
+
       showToast('✅ Partie rejointe ! Lancement...');
       
       navigate('/game', { 
         state: { 
           mode: data.mode,
           bet: data.bet_amount,
-          players: data.players.length,
+          players: updatedPlayers,
           difficulty: data.difficulty,
           isPrivate: true,
           inviteCode: data.invite_code,
-          initialState: data.state
+          gameId: data.id,
+          participantIds: newParticipantIds
         } 
       });
     } catch (err) {
