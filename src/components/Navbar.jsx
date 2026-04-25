@@ -1,5 +1,5 @@
 // src/components/Navbar.jsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, startTransition } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import './Navbar.css';
@@ -31,11 +31,21 @@ export default function Navbar() {
   const handleSignOut = async () => {
     try {
       await signOut();
-      navigate('/');
+      startTransition(() => {
+        navigate('/');
+      });
       setDropdownOpen(false);
     } catch (err) {
       console.error('Erreur lors de la déconnexion', err);
     }
+  };
+
+  const handleNavigate = (path) => {
+    startTransition(() => {
+      navigate(path);
+    });
+    if (menuOpen) setMenuOpen(false);
+    if (dropdownOpen) setDropdownOpen(false);
   };
 
   const isActive = (path) => location.pathname === path;
@@ -44,7 +54,7 @@ export default function Navbar() {
     <nav className="navbar">
       <div className="navbar-inner">
         {/* Logo */}
-        <div className="navbar-logo" onClick={() => navigate('/')} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && navigate('/')} aria-label="Accueil">
+        <div className="navbar-logo" onClick={() => handleNavigate('/')} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && handleNavigate('/')} aria-label="Accueil">
           <div className="logo-icon">
             <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
               <rect width="40" height="40" rx="10" fill="url(#logoGrad)"/>
@@ -70,13 +80,13 @@ export default function Navbar() {
             <>
               <button
                 className={`nav-link ${isActive('/lobby') ? 'active' : ''}`}
-                onClick={() => navigate('/lobby')}
+                onClick={() => handleNavigate('/lobby')}
               >
                 🎮 Jouer
               </button>
               <button
                 className={`nav-link ${isActive('/leaderboard') ? 'active' : ''}`}
-                onClick={() => navigate('/leaderboard')}
+                onClick={() => handleNavigate('/leaderboard')}
               >
                 🏆 Classement
               </button>
@@ -89,7 +99,7 @@ export default function Navbar() {
           {isAuthenticated ? (
             <>
               {/* Wallet */}
-              <div className="wallet-pill" onClick={() => navigate('/lobby')} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && navigate('/lobby')} aria-label="Mon portefeuille">
+              <div className="wallet-pill" onClick={() => handleNavigate('/lobby')} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && handleNavigate('/lobby')} aria-label="Mon portefeuille">
                 <span className="wallet-icon">💰</span>
                 <span className="wallet-amount">
                   {(profile?.walletBalance || 0).toFixed(2)}€
@@ -119,10 +129,10 @@ export default function Navbar() {
                       <span>{profile?.email || user?.email}</span>
                     </div>
                     <div className="dropdown-divider" />
-                    <button className="dropdown-item" onClick={() => { navigate('/profile'); setDropdownOpen(false); }}>
+                    <button className="dropdown-item" onClick={() => handleNavigate('/profile')}>
                       🎮 Mon Profil
                     </button>
-                    <button className="dropdown-item" onClick={() => { navigate('/stats'); setDropdownOpen(false); }}>
+                    <button className="dropdown-item" onClick={() => handleNavigate('/stats')}>
                       📊 Statistiques
                     </button>
                     <div className="dropdown-divider" />
@@ -135,10 +145,10 @@ export default function Navbar() {
             </>
           ) : (
             <div className="auth-buttons">
-              <button className="btn btn-ghost btn-sm" onClick={() => navigate('/auth?mode=login')}>
+              <button className="btn btn-ghost btn-sm" onClick={() => handleNavigate('/auth?mode=login')}>
                 Connexion
               </button>
-              <button className="btn btn-gold btn-sm" onClick={() => navigate('/auth?mode=register')}>
+              <button className="btn btn-gold btn-sm" onClick={() => handleNavigate('/auth?mode=register')}>
                 S'inscrire
               </button>
             </div>
@@ -160,10 +170,10 @@ export default function Navbar() {
         <div className="mobile-menu">
           {isAuthenticated ? (
             <>
-              <button className="mobile-nav-link" onClick={() => { navigate('/lobby'); setMenuOpen(false); }}>
+              <button className="mobile-nav-link" onClick={() => handleNavigate('/lobby')}>
                 🎮 Jouer
               </button>
-              <button className="mobile-nav-link" onClick={() => { navigate('/leaderboard'); setMenuOpen(false); }}>
+              <button className="mobile-nav-link" onClick={() => handleNavigate('/leaderboard')}>
                 🏆 Classement
               </button>
               <button className="mobile-nav-link danger" onClick={handleSignOut}>
@@ -172,10 +182,10 @@ export default function Navbar() {
             </>
           ) : (
             <>
-              <button className="mobile-nav-link" onClick={() => { navigate('/auth?mode=login'); setMenuOpen(false); }}>
+              <button className="mobile-nav-link" onClick={() => handleNavigate('/auth?mode=login')}>
                 Connexion
               </button>
-              <button className="mobile-nav-link" onClick={() => { navigate('/auth?mode=register'); setMenuOpen(false); }}>
+              <button className="mobile-nav-link" onClick={() => handleNavigate('/auth?mode=register')}>
                 S'inscrire
               </button>
             </>
