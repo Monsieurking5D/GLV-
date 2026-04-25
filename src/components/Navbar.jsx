@@ -48,6 +48,12 @@ export default function Navbar() {
     if (dropdownOpen) setDropdownOpen(false);
   };
 
+  const toggleDropdown = () => {
+    startTransition(() => {
+      setDropdownOpen(prev => !prev);
+    });
+  };
+
   const isActive = (path) => location.pathname === path;
 
   return (
@@ -110,7 +116,7 @@ export default function Navbar() {
               <div className="user-dropdown">
                 <button
                   className="user-btn"
-                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                  onClick={toggleDropdown}
                   id="user-menu-btn"
                 >
                   <div className="user-avatar">
