@@ -119,12 +119,13 @@
 /* Lobby columns */
 .lobby-columns {
   display: grid;
-  grid-template-columns: 1fr 340px;
+  grid-template-columns: 1fr 1fr 340px;
   gap: var(--space-6);
   align-items: start;
 }
 
 .lobby-left,
+.lobby-center,
 .lobby-right {
   display: flex;
   flex-direction: column;
@@ -547,9 +548,95 @@
   text-transform: uppercase;
 }
 
+/* Public Games List */
+.public-games-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  background: var(--bg-card);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  min-height: 300px;
+}
+
+.game-item-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-glass);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-base);
+}
+
+.game-item-card:hover {
+  border-color: rgba(245,197,24,0.2);
+  background: var(--bg-glass-hover);
+}
+
+.game-item-card.full {
+  opacity: 0.7;
+}
+
+.game-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.game-item-main {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.game-item-mode {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+}
+
+.game-item-bet {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+  font-size: var(--text-base);
+  color: var(--gold-primary);
+}
+
+.game-item-details {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+
+.games-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  color: var(--text-muted);
+  text-align: center;
+  font-size: var(--text-sm);
+}
+
+.games-empty span {
+  font-size: 2rem;
+  opacity: 0.5;
+}
+
 /* Responsive */
-@media (max-width: 1024px) {
+@media (max-width: 1200px) {
+  .lobby-columns { grid-template-columns: 1fr 1fr; }
+  .lobby-right { grid-column: span 2; }
+}
+
+@media (max-width: 800px) {
   .lobby-columns { grid-template-columns: 1fr; }
+  .lobby-right { grid-column: span 1; }
   .stats-row { grid-template-columns: repeat(2, 1fr); }
 }
 

@@ -69,6 +69,40 @@ export default function Lobby() {
   const [showPrivateModal, setShowPrivateModal] = useState(false);
   const [isCreatingPrivate, setIsCreatingPrivate] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
+  const [publicGames, setPublicGames] = useState([]);
+  const [loadingGames, setLoadingGames] = useState(true);
+
+  // Charger les parties publiques et s'abonner aux changements
+  useEffect(() => {
+    const fetchPublicGames = async () => {
+      const { data } = await supabase
+        .from('games')
+        .select('*')
+        .eq('is_private', false)
+        .eq('status', 'active')
+        .order('created_at', { ascending: false });
+      
+      if (data) setPublicGames(data);
+      setLoadingGames(false);
+    };
+
+    fetchPublicGames();
+
+    const channel = supabase
+      .channel('lobby_public_games')
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'games'
+      }, () => {
+        fetchPublicGames();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   const generateInviteCode = () => {
     return Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -171,6 +205,71 @@ export default function Lobby() {
     }
   };
 
+  const handleJoinGame = async (game) => {
+    if (isStarting) return;
+    setIsStarting(true);
+
+    try {
+      // Vérification du solde
+      if (balance < game.bet_amount) {
+        showToast(`💰 Solde insuffisant (${game.bet_amount}€ requis).`, 'error');
+        setShowDepositModal(true);
+        return;
+      }
+
+      // Débiter la mise
+      if (game.bet_amount > 0) {
+        await addTransaction({
+          type: 'bet',
+          amount: -game.bet_amount,
+          description: `🎲 Rejoindre partie ${game.invite_code || 'publique'}`
+        });
+      }
+
+      // Mettre à jour la partie
+      const newParticipantIds = [...(game.participant_ids || []), profile.id];
+      const updatedPlayers = [...game.players];
+      const aiIndex = updatedPlayers.findIndex(p => p.isAI);
+      
+      if (aiIndex !== -1) {
+        updatedPlayers[aiIndex] = {
+          id: profile.id,
+          name: profile.username,
+          color: updatedPlayers[aiIndex].color,
+          isAI: false
+        };
+      }
+
+      await supabase
+        .from('games')
+        .update({ 
+          participant_ids: newParticipantIds,
+          players: updatedPlayers
+        })
+        .eq('id', game.id);
+
+      showToast('✅ Partie rejointe !');
+      
+      navigate('/game', { 
+        state: { 
+          mode: game.mode,
+          bet: game.bet_amount,
+          players: updatedPlayers,
+          difficulty: game.difficulty,
+          isPrivate: game.is_private,
+          inviteCode: game.invite_code,
+          gameId: game.id,
+          participantIds: newParticipantIds
+        } 
+      });
+    } catch (err) {
+      console.error("Erreur join game:", err);
+      showToast('❌ Impossible de rejoindre la partie.', 'error');
+    } finally {
+      setIsStarting(false);
+    }
+  };
+
   const handleJoinPrivate = async () => {
     if (!joinCode || joinCode.length < 6) {
       showToast('⚠️ Veuillez entrer un code valide.', 'error');
@@ -191,62 +290,9 @@ export default function Lobby() {
         return;
       }
 
-      // Vérification du solde
-      if (balance < data.bet_amount) {
-        showToast(`💰 Solde insuffisant (${data.bet_amount}€ requis).`, 'error');
-        setShowDepositModal(true);
-        return;
-      }
-
-      // Débiter la mise
-      if (data.bet_amount > 0) {
-        await addTransaction({
-          type: 'bet',
-          amount: -data.bet_amount,
-          description: `🎲 Rejoindre partie privée ${joinCode}`
-        });
-      }
-
-      // Mettre à jour la partie avec le nouveau participant
-      const newParticipantIds = [...(data.participant_ids || []), profile.id];
-      const updatedPlayers = [...data.players];
-      
-      // On remplace la première IA disponible par le joueur humain
-      const aiIndex = updatedPlayers.findIndex(p => p.isAI);
-      if (aiIndex !== -1) {
-        updatedPlayers[aiIndex] = {
-          id: profile.id,
-          name: profile.username,
-          color: updatedPlayers[aiIndex].color,
-          isAI: false
-        };
-      }
-
-      await supabase
-        .from('games')
-        .update({ 
-          participant_ids: newParticipantIds,
-          players: updatedPlayers
-        })
-        .eq('id', data.id);
-
-      showToast('✅ Partie rejointe ! Lancement...');
-      
-      navigate('/game', { 
-        state: { 
-          mode: data.mode,
-          bet: data.bet_amount,
-          players: updatedPlayers,
-          difficulty: data.difficulty,
-          isPrivate: true,
-          inviteCode: data.invite_code,
-          gameId: data.id,
-          participantIds: newParticipantIds
-        } 
-      });
+      await handleJoinGame(data);
     } catch (err) {
       console.error("Erreur join private:", err);
-      showToast('❌ Impossible de rejoindre la partie.', 'error');
     } finally {
       setIsStarting(false);
     }
@@ -497,6 +543,46 @@ export default function Lobby() {
                 </div>
               </div>
             )}
+          </div>
+
+          {/* Center — Public Games */}
+          <div className="lobby-center">
+             <div className="lobby-section-title">🌍 Parties publiques en cours</div>
+             <div className="public-games-list">
+               {loadingGames ? (
+                 <div className="games-empty">Chargement des parties...</div>
+               ) : publicGames.length === 0 ? (
+                 <div className="games-empty">
+                   <span>🎲</span>
+                   <p>Aucune partie publique disponible. Créez-en une !</p>
+                 </div>
+               ) : (
+                 publicGames.map(game => {
+                   const participantsCount = game.participant_ids?.length || 1;
+                   const isFull = participantsCount >= (game.players?.length || 2);
+                   return (
+                     <div key={game.id} className={`game-item-card ${isFull ? 'full' : ''}`}>
+                       <div className="game-item-info">
+                         <div className="game-item-main">
+                           <span className="game-item-mode">{game.mode === '1v1' ? 'Duel' : game.mode}</span>
+                           <span className="game-item-bet">{game.bet_amount.toFixed(2)}€</span>
+                         </div>
+                         <div className="game-item-details">
+                           👤 {participantsCount}/{(game.players?.length || 2)} joueurs
+                         </div>
+                       </div>
+                       <button 
+                         className="btn btn-gold btn-sm" 
+                         disabled={isFull || isStarting}
+                         onClick={() => handleJoinGame(game)}
+                       >
+                         {isFull ? 'Pleine' : 'Rejoindre'}
+                       </button>
+                     </div>
+                   );
+                 })
+               )}
+             </div>
           </div>
 
           {/* Right — Transactions */}
