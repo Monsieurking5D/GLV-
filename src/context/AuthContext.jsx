@@ -41,8 +41,8 @@ export function AuthProvider({ children }) {
         .limit(50);
 
       if (txError) throw txError;
-
-      setProfile({
+      
+      const newProfile = {
         ...userProfile,
         walletBalance: userProfile.wallet_balance,
         bonusBalance: userProfile.bonus_balance || 0,
@@ -51,10 +51,14 @@ export function AuthProvider({ children }) {
         gamesPlayed: userProfile.games_played,
         gamesWon: userProfile.games_won,
         transactions: transactions || []
-      });
+      };
+      
+      setProfile(newProfile);
+      return newProfile;
     } catch (err) {
       console.error("Erreur lors du chargement du profil:", err);
       setError(err.message || "Erreur lors du chargement du profil");
+      throw err; // Crucial pour le rollback dans addTransaction
     } finally {
       setLoading(false);
     }
@@ -65,7 +69,7 @@ export function AuthProvider({ children }) {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user || null);
       if (session?.user) {
-        fetchProfile(session.user.id);
+        fetchProfile(session.user.id).catch(() => {}); // On ignore l'erreur d'init
       } else {
         setLoading(false);
       }
@@ -76,7 +80,7 @@ export function AuthProvider({ children }) {
       if (_event === 'SIGNED_IN' || _event === 'SIGNED_OUT' || _event === 'PASSWORD_RECOVERY') {
         setUser(session?.user || null);
         if (session?.user) {
-          fetchProfile(session.user.id);
+          fetchProfile(session.user.id).catch(() => {});
         } else {
           setProfile(null);
           setLoading(false);
@@ -150,6 +154,7 @@ export function AuthProvider({ children }) {
       if (error) {
         console.error("Erreur lors de la mise à jour du profil:", error);
         setProfile(previousProfile); // Rollback si erreur réseau ou DB
+        throw error;
       }
     }
   };
@@ -158,7 +163,7 @@ export function AuthProvider({ children }) {
     if (!user) return;
     
     // Sauvegarde pour rollback si besoin
-    const previousProfile = { ...profile };
+    const previousProfile = profile ? { ...profile } : null;
 
     // Mise à jour optimiste du solde
     if (profile) {
@@ -168,25 +173,27 @@ export function AuthProvider({ children }) {
       });
     }
 
-    const { data, error } = await supabase
-      .from('transactions')
-      .insert([{ 
-        user_id: user.id, 
-        amount: transaction.amount, 
-        type: transaction.type, 
-        description: transaction.description 
-      }])
-      .select()
-      .single();
+    try {
+      const { error } = await supabase
+        .from('transactions')
+        .insert([{ 
+          user_id: user.id, 
+          amount: transaction.amount, 
+          type: transaction.type, 
+          description: transaction.description 
+        }]);
 
-    if (error) {
-      console.error("Erreur ajout transaction:", error);
-      setProfile(previousProfile); // Rollback
-      throw error;
+      if (error) throw error;
+
+      // Crucial: On force le rafraîchissement du profil
+      // Si fetchProfile échoue après retries, on rollback car on ne peut pas garantir le solde
+      await fetchProfile(user.id);
+      
+    } catch (err) {
+      console.error("Erreur flux transaction:", err);
+      if (previousProfile) setProfile(previousProfile); // Rollback
+      throw err;
     }
-
-    // Rafraîchir les données pour être certain du solde final calculé par la DB
-    await fetchProfile(user.id);
   };
 
   const value = useMemo(() => ({

@@ -53,6 +53,7 @@ export default function Game() {
   const [diceRolling, setDiceRolling] = useState(false);
   const [showWinner, setShowWinner] = useState(false);
   const [showQuitConfirm, setShowQuitConfirm] = useState(false);
+  const [isEnding, setIsEnding] = useState(false);
   const [toast, setToast] = useState(null);
   const [activeTab, setActiveTab] = useState('chat'); // 'log' or 'chat'
   const [messages, setMessages] = useState([]);
@@ -160,6 +161,9 @@ export default function Game() {
   }, [messages, activeTab]);
 
   const handleGameEnd = useCallback(async (winnerColor) => {
+    if (isEnding) return;
+    setIsEnding(true);
+
     if (bet > 0) {
       try {
         if (winnerColor === 'red') {
@@ -191,18 +195,22 @@ export default function Game() {
         }
       } catch (err) {
         console.error("Erreur transaction fin de partie:", err);
+        showToast("⚠️ Erreur lors de l'enregistrement de la fin de partie.");
       }
     } else {
       // Solo sans mise: Juste les stats
-      updateProfile({
+      await updateProfile({
         gamesPlayed: (profile?.gamesPlayed || 0) + 1,
         gamesWon: winnerColor === 'red' ? (profile?.gamesWon || 0) + 1 : (profile?.gamesWon || 0),
       });
     }
 
-    // On affiche la modal APRÈS que les transactions soient OK (Bug #6)
-    winnerTimeoutRef.current = setTimeout(() => setShowWinner(true), 600);
-  }, [bet, mode, gameState.players.length, addTransaction, updateProfile, profile]);
+    // On affiche la modal APRÈS que les transactions soient OK
+    winnerTimeoutRef.current = setTimeout(() => {
+      setShowWinner(true);
+      setIsEnding(false);
+    }, 600);
+  }, [bet, mode, gameState.players.length, addTransaction, updateProfile, profile, isEnding]);
 
   // Detect winner
   useEffect(() => {

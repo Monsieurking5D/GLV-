@@ -67,6 +67,7 @@ export default function Lobby() {
   const [joinCode, setJoinCode] = useState('');
   const [showPrivateModal, setShowPrivateModal] = useState(false);
   const [isCreatingPrivate, setIsCreatingPrivate] = useState(false);
+  const [isStarting, setIsStarting] = useState(false);
 
   const generateInviteCode = () => {
     return Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -117,29 +118,47 @@ export default function Lobby() {
   };
 
   const handleStartGame = async () => {
-    if (!currentMode?.available) return;
+    if (!currentMode?.available || isStarting) return;
 
     if (!isSoloMode && !canBet) {
       setShowDepositModal(true);
       return;
     }
 
-    let code = null;
-    if (isPrivate) {
-      code = generateInviteCode();
-    }
+    setIsStarting(true);
 
-    // Lancer la partie
-    navigate('/game', {
-      state: {
-        mode: selectedMode,
-        bet: isSoloMode ? 0 : selectedBet,
-        players: currentMode.players,
-        difficulty: selectedDifficulty,
-        isPrivate,
-        inviteCode: code,
+    try {
+      // Débiter la mise avant de lancer la partie
+      if (!isSoloMode) {
+        await addTransaction({
+          type: 'bet',
+          amount: -selectedBet,
+          description: `🎲 Mise pour partie ${currentMode.label}`
+        });
       }
-    });
+
+      let code = null;
+      if (isPrivate) {
+        code = generateInviteCode();
+      }
+
+      // Lancer la partie
+      navigate('/game', {
+        state: {
+          mode: selectedMode,
+          bet: isSoloMode ? 0 : selectedBet,
+          players: currentMode.players,
+          difficulty: selectedDifficulty,
+          isPrivate,
+          inviteCode: code,
+        }
+      });
+    } catch (err) {
+      console.error("Erreur lancement partie:", err);
+      showToast("❌ Erreur lors du débit de la mise. Veuillez réessayer.", "error");
+    } finally {
+      setIsStarting(false);
+    }
   };
 
   const handleJoinPrivate = () => {
@@ -352,12 +371,14 @@ export default function Lobby() {
 
             {/* Start button */}
             <button
-              className={`btn btn-gold w-full start-btn ${(!currentMode?.available) ? 'disabled-mode' : ''}`}
+              className={`btn btn-gold w-full start-btn ${(!currentMode?.available || isStarting) ? 'disabled-mode' : ''}`}
               onClick={handleStartGame}
-              disabled={!currentMode?.available}
+              disabled={!currentMode?.available || isStarting}
               id="start-game-btn"
             >
-              {isSoloMode ? (
+              {isStarting ? (
+                <><div className="spinner" style={{width:18,height:18,borderWidth:2,marginRight:8}} /> Préparation...</>
+              ) : isSoloMode ? (
                 '🤖 Jouer contre l\'IA'
               ) : isPrivate ? (
                 `🔒 Créer la partie privée — ${selectedBet.toFixed(2)}€`
