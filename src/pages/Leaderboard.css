@@ -1,11 +1,15 @@
 /* src/pages/Leaderboard.css */
 .leaderboard-page {
   min-height: 100vh;
-  margin-top: 60px; /* Espace pour la navbar */
-  padding: var(--space-6) var(--space-4);
-  max-width: 1000px;
+  padding-top: 100px; /* Plus d'espace sous la navbar */
+  padding-bottom: 100px;
+  padding-left: var(--space-4);
+  padding-right: var(--space-4);
+  max-width: 800px; /* Plus compact pour être mieux centré */
   margin-left: auto;
   margin-right: auto;
+  display: flex;
+  flex-direction: column;
   position: relative;
   z-index: 1;
 }
