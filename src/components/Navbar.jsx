@@ -58,6 +58,14 @@ const UserMenu = memo(({ profile, user, signOut, handleNavigate }) => {
   );
 });
 
+// Sous-composant pour les boutons d'auth
+const AuthButtons = memo(({ handleNavigate }) => (
+  <div className="auth-buttons">
+    <button className="btn btn-ghost btn-sm" onClick={() => handleNavigate('/auth?mode=login')}>Connexion</button>
+    <button className="btn btn-gold btn-sm" onClick={() => handleNavigate('/auth?mode=register')}>S'inscrire</button>
+  </div>
+));
+
 export default function Navbar() {
   const { user, profile, signOut, isAuthenticated } = useAuth();
   const navigate = useNavigate();
@@ -124,10 +132,7 @@ export default function Navbar() {
               <UserMenu profile={profile} user={user} signOut={signOut} handleNavigate={handleNavigate} />
             </>
           ) : (
-            <div className="auth-buttons">
-              <button className="btn btn-ghost btn-sm" onClick={() => handleNavigate('/auth?mode=login')}>Connexion</button>
-              <button className="btn btn-gold btn-sm" onClick={() => handleNavigate('/auth?mode=register')}>S'inscrire</button>
-            </div>
+            <AuthButtons handleNavigate={handleNavigate} />
           )}
 
           <button className={`hamburger ${menuOpen ? 'open' : ''}`} onClick={() => setMenuOpen(!menuOpen)}>
