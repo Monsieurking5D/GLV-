@@ -47,15 +47,15 @@ export default function Game() {
   const buildPlayers = useCallback(() => {
     const human = { ...HUMAN_PLAYER };
     if (mode === 'solo' || mode === '1v1') {
-      return [human, makeAIPlayer('green', 'IA', difficulty)];
+      return [human, makeAIPlayer('green', 'Mario', difficulty)];
     }
     if (mode === '1v1v1') {
-      return [human, makeAIPlayer('green', 'IA 1', difficulty), makeAIPlayer('blue', 'IA 2', difficulty)];
+      return [human, makeAIPlayer('green', 'Mario 1', difficulty), makeAIPlayer('blue', 'Mario 2', difficulty)];
     }
     if (mode === '1v1v1v1') {
-      return [human, makeAIPlayer('green', 'IA 1', difficulty), makeAIPlayer('blue', 'IA 2', difficulty), makeAIPlayer('yellow', 'IA 3', difficulty)];
+      return [human, makeAIPlayer('green', 'Mario 1', difficulty), makeAIPlayer('blue', 'Mario 2', difficulty), makeAIPlayer('yellow', 'Mario 3', difficulty)];
     }
-    return [human, makeAIPlayer('green', 'IA', difficulty)];
+    return [human, makeAIPlayer('green', 'Mario', difficulty)];
   }, [mode, difficulty]);
 
   const [players] = useState(() => {
