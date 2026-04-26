@@ -70,8 +70,8 @@ export default function Game() {
   const [isEnding, setIsEnding] = useState(false);
   const [toast, setToast] = useState(null);
   const [activeTab, setActiveTab] = useState('chat'); // 'log' or 'chat'
-  const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
+  const [lastDiceValue, setLastDiceValue] = useState(null);
   
   const logRef = useRef(null);
   const aiTimeoutRef = useRef(null);
@@ -146,6 +146,11 @@ export default function Game() {
       }
     };
     persistGame();
+
+    // Mémoriser le dernier dé pour l'affichage
+    if (gameState.diceValue) {
+      setLastDiceValue(gameState.diceValue);
+    }
   }, [gameState, user?.id, currentPlayer?.id, canProcessAI]);
 
   // Heartbeat: Maintenir la partie active dans le Lobby pendant l'attente
@@ -502,18 +507,24 @@ export default function Game() {
             </span>
           </div>
 
-          {/* Dice */}
-          {isHumanTurn && (
-            <div className="dice-section">
-              <Dice
-                value={gameState.diceValue}
-                rolling={diceRolling}
-                onRoll={() => handleRollDice(false)}
-                disabled={gameState.diceRolled || !isHumanTurn}
-                currentColor={COLOR_HEX[currentPlayer?.color]}
-              />
+          {/* Dice Section */}
+          <div className="dice-section-modern">
+            <div className="turn-badge-modern" style={{ borderColor: COLOR_HEX[currentPlayer?.color] }}>
+              <div className="turn-badge-dot" style={{ backgroundColor: COLOR_HEX[currentPlayer?.color] }} />
+              <div className="turn-badge-info">
+                <span className="turn-badge-label">Tour de</span>
+                <span className="turn-badge-name">{currentPlayer?.name}</span>
+              </div>
             </div>
-          )}
+
+            <Dice
+              value={gameState.diceValue || lastDiceValue}
+              rolling={diceRolling}
+              onRoll={() => handleRollDice(false)}
+              disabled={gameState.diceRolled || !isHumanTurn || gameState.state === 'WAITING'}
+              currentColor={COLOR_HEX[currentPlayer?.color]}
+            />
+          </div>
 
           {isHumanTurn && gameState.diceRolled && gameState.movablePieces.length > 0 && (
             <div className="select-token-hint">
