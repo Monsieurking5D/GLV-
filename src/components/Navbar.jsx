@@ -125,7 +125,6 @@ export default function Navbar() {
           {isAuthenticated && (
             <>
               <button className={`nav-link ${isActive('/lobby') ? 'active' : ''}`} onClick={() => handleNavigate('/lobby')}>🎮 Jouer</button>
-              <button className={`nav-link ${isActive('/leaderboard') ? 'active' : ''}`} onClick={() => handleNavigate('/leaderboard')}>🏆 Classement</button>
             </>
           )}
         </div>
@@ -154,7 +153,6 @@ export default function Navbar() {
           {isAuthenticated ? (
             <>
               <button className="mobile-nav-link" onClick={() => handleNavigate('/lobby')}>🎮 Jouer</button>
-              <button className="mobile-nav-link" onClick={() => handleNavigate('/leaderboard')}>🏆 Classement</button>
               <button className="mobile-nav-link danger" onClick={async () => { await signOut(); handleNavigate('/'); }}>🚪 Déconnexion</button>
             </>
           ) : (

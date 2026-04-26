@@ -772,11 +772,6 @@ export default function Game() {
             <span className="mtb-label">Chat</span>
             {messages.length > 0 && <span className="mtb-badge">1</span>}
           </button>
-          
-          <button className={`mtb-item ${activeTab === 'leaderboard' ? 'active' : ''}`} onClick={() => navigate('/leaderboard')}>
-            <span className="mtb-icon">🏆</span>
-            <span className="mtb-label">Classement</span>
-          </button>
         </div>
       )}
 

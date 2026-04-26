@@ -796,7 +796,7 @@
 
 /* Force dice to be small in tab bar */
 .mtb-dice-container .dice-container {
-  transform: scale(0.35); /* Reduced scale */
+  transform: scale(0.28); /* Further reduced scale */
   margin: 0;
   cursor: pointer;
 }
