@@ -44,7 +44,7 @@ const VersionChecker = () => {
       } catch (err) {
         // Erreur silencieuse (ex: offline)
       }
-    }, 1000 * 60 * 5); // 5 minutes
+    }, 1000 * 60 * 1); // 1 minute
 
     return () => clearInterval(interval);
   }, [currentVersion]);
