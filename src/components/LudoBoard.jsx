@@ -191,7 +191,7 @@ const LudoBoard = memo(({ gameState, onTokenClick, movablePieces = [] }) => {
             width={6 * CELL}
             height={6 * CELL}
             fill={COLOR_HEX[color]}
-            rx="8"
+            rx="4"
           />
           {/* Carré blanc intérieur */}
           <rect
@@ -210,9 +210,9 @@ const LudoBoard = memo(({ gameState, onTokenClick, movablePieces = [] }) => {
                 key={`base-${color}-${i}`}
                 cx={cx}
                 cy={cy}
-                r={CELL * 0.4}
+                r={CELL * 0.42}
                 fill={COLOR_HEX[color]}
-                opacity="0.15"
+                opacity="0.22"
               />
             );
           })}
@@ -231,7 +231,7 @@ const LudoBoard = memo(({ gameState, onTokenClick, movablePieces = [] }) => {
               width={CELL}
               height={CELL}
               fill={pathCellFill(col, row)}
-              stroke="rgba(0,0,0,0.12)"
+              stroke="rgba(0,0,0,0.15)"
               strokeWidth="0.5"
             />
           );
@@ -252,8 +252,8 @@ const LudoBoard = memo(({ gameState, onTokenClick, movablePieces = [] }) => {
             key={`star-${idx}`}
             d={starPath(x, y, CELL * 0.35)}
             fill="none"
-            stroke="rgba(0,0,0,0.3)"
-            strokeWidth="1.5"
+            stroke="rgba(0,0,0,0.25)"
+            strokeWidth="1.2"
             strokeLinejoin="round"
           />
         );
@@ -274,30 +274,31 @@ const LudoBoard = memo(({ gameState, onTokenClick, movablePieces = [] }) => {
             <path
               d={`M -${CELL*0.2} 0 L ${CELL*0.2} -${CELL*0.15} L ${CELL*0.2} ${CELL*0.15} Z`}
               fill={COLOR_HEX[color]}
-              opacity="0.6"
+              opacity="0.4"
             />
           </g>
         );
       })}
 
-      {/* 6) Centre — triangles */}
+      {/* 6) Centre — triangles (avec léger overlap pour éviter les lignes blanches) */}
       {(() => {
         const cx = 7.5 * CELL;
         const cy = 7.5 * CELL;
+        const offset = 0.5; // léger overlap au centre
         const tri = (color, points) => (
-          <polygon points={points} fill={COLOR_HEX[color]} stroke="rgba(255,255,255,0.2)" strokeWidth="1" />
+          <polygon points={points} fill={COLOR_HEX[color]} stroke={COLOR_HEX[color]} strokeWidth="0.5" />
         );
         return (
           <g>
-            {tri('green',  `${6*CELL},${6*CELL} ${9*CELL},${6*CELL} ${cx},${cy}`)}
-            {tri('yellow', `${9*CELL},${6*CELL} ${9*CELL},${9*CELL} ${cx},${cy}`)}
-            {tri('red',    `${9*CELL},${9*CELL} ${6*CELL},${9*CELL} ${cx},${cy}`)}
-            {tri('blue',   `${6*CELL},${9*CELL} ${6*CELL},${6*CELL} ${cx},${cy}`)}
+            {tri('green',  `${6*CELL},${6*CELL} ${9*CELL},${6*CELL} ${cx},${cy + offset}`)}
+            {tri('yellow', `${9*CELL},${6*CELL} ${9*CELL},${9*CELL} ${cx - offset},${cy}`)}
+            {tri('red',    `${9*CELL},${9*CELL} ${6*CELL},${9*CELL} ${cx},${cy - offset}`)}
+            {tri('blue',   `${6*CELL},${9*CELL} ${6*CELL},${6*CELL} ${cx + offset},${cy}`)}
           </g>
         );
       })()}
 
-      {/* 7) Pions Style "Location Marker" */}
+      {/* 7) Pions Style "Location Marker" épuré */}
       {tokens && Object.values(tokens).map((arr) =>
         arr.map((token) => {
           const { x: bx, y: by } = getTokenXY(token);
@@ -306,6 +307,7 @@ const LudoBoard = memo(({ gameState, onTokenClick, movablePieces = [] }) => {
           const y = by + dy;
           const movable = isMovable(token);
           const mainColor = COLOR_HEX[token.color];
+          const pinR = CELL * 0.38;
 
           return (
             <g
@@ -318,7 +320,7 @@ const LudoBoard = memo(({ gameState, onTokenClick, movablePieces = [] }) => {
                 <circle
                   cx={x}
                   cy={y}
-                  r={PIN_R + 8}
+                  r={pinR + 8}
                   className="lb-token-ring"
                   fill="none"
                   stroke={mainColor}
@@ -327,12 +329,12 @@ const LudoBoard = memo(({ gameState, onTokenClick, movablePieces = [] }) => {
                 />
               )}
 
-              {/* Forme de goutte blanche (Map Pin) */}
+              {/* Forme de goutte blanche (Map Pin) plus courte */}
               <path
                 d={`
-                  M ${x} ${y + PIN_R * 1.2}
-                  L ${x - PIN_R * 0.8} ${y}
-                  A ${PIN_R} ${PIN_R} 0 1 1 ${x + PIN_R * 0.8} ${y}
+                  M ${x} ${y + pinR * 0.95}
+                  L ${x - pinR * 0.75} ${y - pinR * 0.2}
+                  A ${pinR} ${pinR} 0 1 1 ${x + pinR * 0.75} ${y - pinR * 0.2}
                   Z
                 `}
                 fill="#FFFFFF"
@@ -344,16 +346,16 @@ const LudoBoard = memo(({ gameState, onTokenClick, movablePieces = [] }) => {
               {/* Cercle de couleur intérieur */}
               <circle 
                 cx={x} 
-                cy={y - PIN_R * 0.2} 
-                r={PIN_R * 0.55} 
+                cy={y - pinR * 0.35} 
+                r={pinR * 0.5} 
                 fill={mainColor} 
               />
 
               {/* Reflet sur le cercle intérieur */}
               <circle 
-                cx={x - PIN_R * 0.2} 
-                cy={y - PIN_R * 0.4} 
-                r={PIN_R * 0.2} 
+                cx={x - pinR * 0.2} 
+                cy={y - pinR * 0.45} 
+                r={pinR * 0.15} 
                 fill="#FFFFFF" 
                 opacity="0.3" 
               />

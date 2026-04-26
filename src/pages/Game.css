@@ -293,13 +293,14 @@
 
 .board-container {
   width: 100%;
-  max-width: min(92vmin, 620px);
+  max-width: min(100%, calc(100vh - 120px)); /* S'adapte à la hauteur dispo */
   aspect-ratio: 1;
   border-radius: var(--radius-xl);
   overflow: hidden;
   background: linear-gradient(135deg, #0C0C22, #07071A);
   border: 2px solid rgba(245, 197, 24, 0.35);
   box-shadow: var(--shadow-gold), var(--shadow-card);
+  margin: 0 auto;
 }
 
 /* Right panel */
