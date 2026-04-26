@@ -117,20 +117,20 @@ export const HOME_STRETCH_COORDS = {
 // Position maison (zone colorée) pour affichage
 export const HOME_ZONE_TOKENS = {
   red: [
-    [2, 10], [3, 10],
     [2, 11], [3, 11],
+    [2, 12], [3, 12],
   ],
   blue: [
     [2, 2], [3, 2],
     [2, 3], [3, 3],
   ],
   green: [
-    [10, 2], [11, 2],
-    [10, 3], [11, 3],
+    [11, 2], [12, 2],
+    [11, 3], [12, 3],
   ],
   yellow: [
-    [10, 10], [11, 10],
-    [10, 11], [11, 11],
+    [11, 11], [12, 11],
+    [11, 12], [12, 12],
   ],
 };
 
