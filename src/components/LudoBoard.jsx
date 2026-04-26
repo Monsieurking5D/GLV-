@@ -228,6 +228,10 @@ const LudoBoard = memo(({ gameState, onTokenClick, movablePieces = [] }) => {
       {[...SAFE_CELLS].map((idx) => {
         const [c, r] = MAIN_PATH_COORDS[idx] || [];
         if (c == null) return null;
+        
+        // Ne pas afficher d'étoile sur les cases de départ colorées
+        if (Object.values(START_POSITIONS).includes(idx)) return null;
+
         const { x, y } = cellXY(c, r);
         return (
           <path
