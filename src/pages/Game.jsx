@@ -419,6 +419,29 @@ export default function Game() {
     navigate('/lobby');
   };
 
+  const handleCancelWaiting = async () => {
+    if (isEnding) return;
+    setIsEnding(true);
+    try {
+      if (bet > 0) {
+        await addTransaction({
+          type: 'refund',
+          amount: Number(bet),
+          description: `🔄 Remboursement : Annulation partie ${inviteCode || 'publique'}`
+        });
+      }
+      if (gameIdRef.current) {
+        await supabase.from('games').update({ status: 'finished' }).eq('id', gameIdRef.current);
+      }
+      navigate('/lobby');
+    } catch (err) {
+      console.error("Erreur annulation:", err);
+      navigate('/lobby');
+    } finally {
+      setIsEnding(false);
+    }
+  };
+
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!newMessage.trim() || !user || !gameIdRef.current) return;
@@ -770,7 +793,7 @@ export default function Game() {
                 </p>
               </div>
             )}
-            <button className="btn btn-ghost" onClick={() => navigate('/lobby')} style={{ marginTop: 'var(--space-8)' }}>
+            <button className="btn btn-ghost" onClick={handleCancelWaiting} style={{ marginTop: 'var(--space-8)' }}>
               Annuler et quitter
             </button>
           </div>
