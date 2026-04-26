@@ -39,13 +39,6 @@ export default function Game() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const copyInviteCode = () => {
-    if (!inviteCode) return;
-    navigator.clipboard.writeText(inviteCode);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
   const { 
     mode = '1v1', 
     bet = 0, 
@@ -58,18 +51,15 @@ export default function Game() {
     isSolo = false
   } = location.state || {};
 
-  // CRITIQUE: On attend que l'utilisateur soit chargé pour éviter tout crash
-  if (!user) {
-    return (
-      <div className="game-page" style={{ justifyContent: 'center', alignItems: 'center' }}>
-        <div className="loader-gold"></div>
-        <p style={{ marginTop: 'var(--space-4)', color: 'var(--gold-primary)' }}>Authentification en cours...</p>
-      </div>
-    );
-  }
-
   const queryParams = new URLSearchParams(location.search);
   const urlGameId = queryParams.get('id');
+
+  const copyInviteCode = () => {
+    if (!inviteCode) return;
+    navigator.clipboard.writeText(inviteCode);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   // Build players list
   const buildPlayers = useCallback(() => {
@@ -87,7 +77,7 @@ export default function Game() {
       return [human, makeAIPlayer('green', 'IA 1', difficulty), makeAIPlayer('blue', 'IA 2', difficulty), makeAIPlayer('yellow', 'IA 3', difficulty)];
     }
     return [human, makeAIPlayer('green', 'IA', difficulty)];
-  }, [mode, difficulty, user.id, profile?.username]);
+  }, [mode, difficulty, user?.id, profile?.username]);
 
   const [players] = useState(() => {
     if (initialPlayers.length > 0) return initialPlayers;
@@ -441,31 +431,6 @@ export default function Game() {
     return () => clearTimeout(winnerTimeoutRef.current);
   }, [gameState.winner, handleGameEnd]);
 
-  // AI turn
-  useEffect(() => {
-    if (!currentPlayer?.isAI || gameState.state !== GAME_STATE.PLAYING || gameState.winner) return;
-    // Seul le créateur (ou premier participant) traite l'IA pour éviter les coups multiples
-    if (!canProcessAI) return;
-
-    if (!gameState.diceRolled) {
-      // AI rolls dice
-      aiTimeoutRef.current = setTimeout(() => {
-        handleRollDice(true);
-      }, getAIThinkingDelay(currentPlayer.difficulty));
-    } else if (gameState.movablePieces.length > 0) {
-      // AI picks token
-      // On rajoute un délai supplémentaire après le dé pour que l'utilisateur voie le résultat
-      aiTimeoutRef.current = setTimeout(() => {
-        const tokenId = getAIMove(gameState, currentPlayer.difficulty);
-        if (tokenId !== null) {
-          setGameState(prev => moveToken(prev, tokenId));
-        }
-      }, getAIThinkingDelay(currentPlayer.difficulty) + 1000); // +1s pour laisser voir le dé
-    }
-
-    return () => clearTimeout(aiTimeoutRef.current);
-  }, [gameState.currentPlayerIndex, gameState.diceRolled, currentPlayer?.isAI, gameState.movablePieces]);
-
   const handleRollDice = useCallback((isAI = false) => {
     if (diceRolling) return;
     if (!isAI && !isHumanTurn) return;
@@ -506,6 +471,27 @@ export default function Game() {
       });
     }, rollDelay);
   }, [diceRolling, isHumanTurn, gameState.diceRolled]);
+
+  // AI turn
+  useEffect(() => {
+    if (!currentPlayer?.isAI || gameState.state !== GAME_STATE.PLAYING || gameState.winner) return;
+    if (!canProcessAI) return;
+
+    if (!gameState.diceRolled) {
+      aiTimeoutRef.current = setTimeout(() => {
+        handleRollDice(true);
+      }, getAIThinkingDelay(currentPlayer.difficulty));
+    } else if (gameState.movablePieces.length > 0) {
+      aiTimeoutRef.current = setTimeout(() => {
+        const tokenId = getAIMove(gameState, currentPlayer.difficulty);
+        if (tokenId !== null) {
+          setGameState(prev => moveToken(prev, tokenId));
+        }
+      }, getAIThinkingDelay(currentPlayer.difficulty) + 1000);
+    }
+
+    return () => clearTimeout(aiTimeoutRef.current);
+  }, [gameState, currentPlayer, canProcessAI, handleRollDice]);
 
   const handleTokenClick = useCallback((token) => {
     if (!isHumanTurn || !gameState.diceRolled) return;
@@ -573,6 +559,16 @@ export default function Game() {
   const commission = Math.min(potTotal * 0.10, 3.00);
   const winnings = winnerIsHuman ? (potTotal - commission).toFixed(2) : 0;
   const displayLog = [...(gameState?.log || [])].slice(-20).reverse();
+
+  // CRITIQUE: rendu conditionnel APRÈS tous les hooks (sinon Rules of Hooks violées)
+  if (!user) {
+    return (
+      <div className="game-page" style={{ justifyContent: 'center', alignItems: 'center', display: 'flex', flexDirection: 'column' }}>
+        <div className="loader-gold"></div>
+        <p style={{ marginTop: 'var(--space-4)', color: 'var(--gold-primary)' }}>Authentification en cours...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="game-page">
@@ -827,6 +823,13 @@ export default function Game() {
             <h3 style={{ marginBottom: 'var(--space-3)' }}>⚠️ Quitter la partie ?</h3>
             <p style={{ marginBottom: 'var(--space-6)' }}>{bet > 0 ? `Vous perdrez votre mise de ${bet}€ si vous quittez maintenant.` : 'Votre partie en cours sera perdue.'}</p>
             <div style={{ display: 'flex', gap: 'var(--space-3)' }}><button className="btn btn-ghost w-full" onClick={() => setShowQuitConfirm(false)}>Continuer à jouer</button><button className="btn btn-danger w-full" onClick={handleQuit} id="confirm-quit-btn">Quitter</button></div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+me="btn btn-danger w-full" onClick={handleQuit} id="confirm-quit-btn">Quitter</button></div>
           </div>
         </div>
       )}
