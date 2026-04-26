@@ -72,9 +72,9 @@ export default function Lobby() {
   const [publicGames, setPublicGames] = useState([]);
   const [loadingGames, setLoadingGames] = useState(true);
 
-  // Charger les parties publiques et s'abonner aux changements
-  useEffect(() => {
-    const fetchPublicGames = async () => {
+  const fetchPublicGames = useCallback(async () => {
+    setLoadingGames(true);
+    try {
       const { data } = await supabase
         .from('games')
         .select('*')
@@ -85,9 +85,15 @@ export default function Lobby() {
         .order('created_at', { ascending: false });
       
       if (data) setPublicGames(data);
+    } catch (err) {
+      console.error("Error fetching games:", err);
+    } finally {
       setLoadingGames(false);
-    };
+    }
+  }, []);
 
+  // Charger les parties publiques et s'abonner aux changements
+  useEffect(() => {
     fetchPublicGames();
 
     const channel = supabase
@@ -104,7 +110,7 @@ export default function Lobby() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [fetchPublicGames]);
 
   const generateInviteCode = () => {
     return Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -564,9 +570,10 @@ export default function Lobby() {
              <div className="lobby-section-title" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
                🌍 Parties publiques
                <button 
-                className="btn-refresh" 
-                onClick={() => window.location.reload()}
+                className={`btn-refresh ${loadingGames ? 'rotating' : ''}`} 
+                onClick={fetchPublicGames}
                 title="Actualiser les parties"
+                disabled={loadingGames}
                 style={{
                   background: 'var(--bg-glass)',
                   border: '1px solid var(--border-glass)',
@@ -578,7 +585,8 @@ export default function Lobby() {
                   justifyContent: 'center',
                   cursor: 'pointer',
                   fontSize: '16px',
-                  transition: 'all 0.3s ease'
+                  transition: 'all 0.3s ease',
+                  opacity: loadingGames ? 0.6 : 1
                 }}
                >
                  🔄
