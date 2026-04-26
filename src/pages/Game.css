@@ -846,6 +846,7 @@
 /* Responsive */
 @media (max-width: 800px) {
   .game-page { 
+    padding-top: 72px; /* Espacement pour la Navbar fixée */
     padding-bottom: 95px; 
     height: 100vh;
     display: flex;

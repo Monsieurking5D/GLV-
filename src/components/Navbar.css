@@ -5,11 +5,11 @@
   top: 0;
   left: 0;
   right: 0;
-  z-index: 100;
-  background: rgba(7, 7, 26, 0.92);
+  z-index: 2000;
+  background: rgba(7, 7, 26, 0.95);
   backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--border-glass);
-  padding: 0 var(--space-6);
+  padding: 0 var(--space-4);
 }
 
 .navbar-inner {
@@ -329,6 +329,7 @@
   .mobile-menu { display: flex; }
   .auth-buttons { display: none; }
   .navbar-logo .logo-text { display: none; }
-  .navbar-inner { gap: var(--space-2); padding: 0 var(--space-4); }
+  .navbar-inner { gap: var(--space-2); padding: 0; }
   .navbar-right { margin-left: 0; }
+  .navbar { padding: 0 var(--space-2); }
 }
