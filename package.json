@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --port 3000",
-    "build": "vite build",
+    "build": "echo {\\\"version\\\": \\\"$(date +%s)\\\"} > public/version.json && vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },

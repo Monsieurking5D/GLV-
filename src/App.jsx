@@ -12,6 +12,7 @@ import Legal from './pages/Legal.jsx';
 import Contact from './pages/Contact.jsx';
 import Profile from './pages/Profile.jsx';
 import Stats from './pages/Stats.jsx';
+import VersionChecker from './components/VersionChecker.jsx';
 
 function PrivateRoute({ children }) {
   const { isAuthenticated, loading } = useAuth();
@@ -117,6 +118,7 @@ export default function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
+        <VersionChecker />
         <AppRoutes />
       </BrowserRouter>
     </AuthProvider>
