@@ -17,6 +17,8 @@ import { getAIMove, getAIThinkingDelay } from '../game/aiPlayer.js';
 import { COLOR_HEX } from '../game/boardConfig.js';
 import './Game.css';
 
+import Navbar from '../components/Navbar.jsx';
+
 const HUMAN_PLAYER = { id: 'human', name: 'Vous', color: 'red', isAI: false };
 
 function makeAIPlayer(color, name, difficulty) {
@@ -27,6 +29,22 @@ export default function Game() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, profile, updateProfile, addTransaction } = useAuth();
+
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 800);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 800);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const copyInviteCode = () => {
+    if (!inviteCode) return;
+    navigator.clipboard.writeText(inviteCode);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   const { 
     mode = '1v1', 
@@ -75,7 +93,7 @@ export default function Game() {
   const [showQuitConfirm, setShowQuitConfirm] = useState(false);
   const [isEnding, setIsEnding] = useState(false);
   const [toast, setToast] = useState(null);
-  const [activeTab, setActiveTab] = useState('chat'); // 'log' or 'chat'
+  const [activeTab, setActiveTab] = useState('game'); // 'game', 'players', 'chat'
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [lastDiceValue, setLastDiceValue] = useState(null);
