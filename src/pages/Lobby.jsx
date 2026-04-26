@@ -24,7 +24,7 @@ const GAME_MODES = [
     desc: 'Triuel à 3 joueurs. 3× votre mise au gagnant.',
     players: 3,
     multiplier: '3×',
-    available: false, // Grisé V2
+    available: true,
   },
   {
     id: '1v1v1v1',
@@ -33,7 +33,7 @@ const GAME_MODES = [
     desc: 'Bataille à 4 joueurs. 4× votre mise !',
     players: 4,
     multiplier: '4×',
-    available: false, // Grisé V2
+    available: true,
   },
   {
     id: 'solo',
