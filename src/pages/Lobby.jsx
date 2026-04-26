@@ -189,8 +189,19 @@ export default function Lobby() {
         { id: profile.id, name: profile.username, color: 'red', isAI: false }
       ];
 
-      if (isSoloMode) {
-        initialPlayers.push({ id: 'ai_blue', name: 'IA', color: 'blue', isAI: true, difficulty: selectedDifficulty });
+      // Remplir les slots restants avec des IAs (qui seront remplacées en multi)
+      const totalSlots = isSoloMode ? (selectedMode === '1v1' || selectedMode === 'solo' ? 2 : (selectedMode === '1v1v1' ? 3 : 4)) : currentMode.players;
+      
+      const colors = ['red', 'green', 'blue', 'yellow']; // Ordre modifié pour que 1v1 soit Rouge/Vert (index 0 et 1)
+      for (let i = 1; i < totalSlots; i++) {
+        const color = colors[i];
+        initialPlayers.push({ 
+          id: `ai_${color}`, 
+          name: isSoloMode ? 'IA' : `Place libre`, 
+          color: color, 
+          isAI: true, 
+          difficulty: selectedDifficulty 
+        });
       }
 
       // Lancer la partie
