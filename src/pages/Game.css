@@ -775,39 +775,44 @@
 /* Integrated Mini-Dice */
 .mtb-dice-container {
   position: relative;
-  width: 70px;
-  height: 70px;
-  margin-top: -30px; /* Float up */
+  width: 60px;
+  height: 60px;
+  margin-top: -25px; /* Float up */
   background: #11112b;
   border: 2px solid var(--border-glass);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.5);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .mtb-dice-container.can-roll {
   border-color: var(--gold-primary);
-  transform: scale(1.1);
-  box-shadow: 0 0 25px rgba(245,197,24,0.3);
+  transform: scale(1.05);
+  box-shadow: 0 0 20px rgba(245,197,24,0.3);
 }
 
 /* Force dice to be small in tab bar */
 .mtb-dice-container .dice-container {
-  transform: scale(0.45);
+  transform: scale(0.35); /* Reduced scale */
   margin: 0;
   cursor: pointer;
+}
+
+/* Remove text under dice on mobile */
+.mtb-dice-container .dice-status-text {
+  display: none !important;
 }
 
 /* Ping animation when turn to roll */
 .dice-ping {
   position: absolute;
-  top: -5px;
-  right: -5px;
-  width: 15px;
-  height: 15px;
+  top: -2px;
+  right: -2px;
+  width: 12px;
+  height: 12px;
   background: var(--gold-primary);
   border-radius: 50%;
   border: 2px solid #11112b;
@@ -840,12 +845,20 @@
 
 /* Responsive */
 @media (max-width: 800px) {
-  .game-page { padding-bottom: 90px; }
+  .game-page { 
+    padding-bottom: 95px; 
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
   .game-layout {
     display: flex;
     flex-direction: column;
     padding: var(--space-1);
     gap: 0;
+    flex: 1;
+    justify-content: center;
   }
   .game-center { 
     width: 100%; 
@@ -854,13 +867,18 @@
     justify-content: center;
     align-items: center;
     flex: 1;
-    min-height: 60vh;
+    margin: var(--space-2) 0;
   }
   .board-container { 
-    width: 98vw;
-    max-width: 450px;
+    width: 95vw;
+    max-width: 400px; /* Reduced max-width */
     border-radius: var(--radius-lg);
     box-shadow: 0 0 50px rgba(0,0,0,0.5);
-    transform: scale(0.95);
+    transform: scale(0.88); /* Reduced scale */
+  }
+  
+  .mobile-game-header {
+    margin: var(--space-2) var(--space-4) 0;
+    flex-shrink: 0;
   }
 }
