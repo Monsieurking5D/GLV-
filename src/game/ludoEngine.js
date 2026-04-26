@@ -96,13 +96,13 @@ export function getMovablePieces(gameState) {
     if (token.state === TOKEN_STATE.HOME) {
       // Peut sortir uniquement sur un 6
       if (diceValue === 6) {
-        movable.push(token.id);
+        movable.push({ color, id: token.id });
       }
     } else if (token.state === TOKEN_STATE.ACTIVE) {
-      // Vérifier s'il peut avancer sans dépasser la fin
-      const newPos = calculateNewPosition(token, diceValue, color);
-      if (newPos !== null) {
-        movable.push(token.id);
+      // Un pion actif peut toujours bouger si sa position finale ne dépasse pas le centre
+      const canMove = (token.position + diceValue) <= FINAL_POSITION;
+      if (canMove) {
+        movable.push({ color, id: token.id });
       }
     }
   });
@@ -179,11 +179,12 @@ export function calculateNewPosition(token, steps, color) {
  * Applique le mouvement d'un pion
  * Retourne le nouvel état du jeu
  */
-export function moveToken(gameState, tokenId) {
+export function moveToken(gameState, tokenData) {
   const { players, currentPlayerIndex, diceValue, tokens } = gameState;
   const currentPlayer = players[currentPlayerIndex];
   const color = currentPlayer.color;
 
+  const tokenId = (typeof tokenData === 'object' && tokenData !== null) ? tokenData.id : tokenData;
   const newTokens = JSON.parse(JSON.stringify(tokens));
   const token = newTokens[color][tokenId];
   const newState = calculateNewPosition(token, diceValue, color);

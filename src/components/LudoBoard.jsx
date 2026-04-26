@@ -91,7 +91,7 @@ const Token = memo(({ token, bx, by, tokens, movable, onTokenClick, getStackOffs
   return (
     <g
       className={`lb-token ${movable ? 'lb-token--movable' : ''} ${isAnimating ? 'lb-token--moving' : ''}`}
-      onClick={() => movable && onTokenClick && onTokenClick(token.id)}
+      onClick={() => movable && onTokenClick && onTokenClick(token)}
       style={{ 
         cursor: movable ? 'pointer' : 'default',
         transform: `translate(${x}px, ${y}px)` 

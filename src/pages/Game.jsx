@@ -458,15 +458,16 @@ export default function Game() {
     }, rollDelay);
   }, [diceRolling, isHumanTurn, gameState.diceRolled]);
 
-  const handleTokenClick = useCallback((tokenId) => {
+  const handleTokenClick = useCallback((token) => {
     if (!isHumanTurn || !gameState.diceRolled) return;
     
-    if (!gameState.movablePieces.includes(tokenId)) {
+    const isMovable = gameState.movablePieces.some(p => p.color === token.color && p.id === token.id);
+    if (!isMovable) {
       showToast("🚫 Ce pion ne peut pas bouger !");
       return;
     }
     
-    setGameState(prev => moveToken(prev, tokenId));
+    setGameState(prev => moveToken(prev, token));
   }, [isHumanTurn, gameState.diceRolled, gameState.movablePieces]);
 
   const handleQuit = () => {
