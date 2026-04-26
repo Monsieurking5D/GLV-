@@ -80,6 +80,8 @@ export default function Lobby() {
         .select('*')
         .eq('is_private', false)
         .eq('status', 'active')
+        .neq('mode', 'solo')
+        .gt('updated_at', new Date(Date.now() - 2 * 60 * 1000).toISOString())
         .order('created_at', { ascending: false });
       
       if (data) setPublicGames(data);

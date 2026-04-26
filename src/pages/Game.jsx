@@ -125,8 +125,6 @@ export default function Game() {
     const persistGame = async () => {
       if (!gameIdRef.current) return;
       
-      // On ne persist que si c'est notre tour (pour éviter d'écraser l'état)
-      // OU si c'est le tour de l'IA et qu'on est l'owner
       const isMyTurn = currentPlayer?.id === user?.id;
       const shouldPersist = isMyTurn || (currentPlayer?.isAI && canProcessAI);
       
@@ -138,7 +136,8 @@ export default function Game() {
           .update({
             state: gameState,
             status: gameState.winner ? 'finished' : 'active',
-            winner: gameState.winner
+            winner: gameState.winner,
+            updated_at: new Date().toISOString()
           })
           .eq('id', gameIdRef.current);
       } catch (err) {
@@ -148,9 +147,39 @@ export default function Game() {
     persistGame();
   }, [gameState, user?.id, currentPlayer?.id, canProcessAI]);
 
+  // Heartbeat: Maintenir la partie active dans le Lobby pendant l'attente
+  useEffect(() => {
+    if (!gameIdRef.current || gameState.state !== 'WAITING' || existingGameId) return;
+
+    const interval = setInterval(async () => {
+      await supabase
+        .from('games')
+        .update({ updated_at: new Date().toISOString() })
+        .eq('id', gameIdRef.current);
+    }, 60000); // Toutes les minutes
+
+    return () => clearInterval(interval);
+  }, [gameState.state, existingGameId]);
+
   // Real-time: Écouter les changements d'état du jeu
   useEffect(() => {
     if (!gameIdRef.current) return;
+
+    // Détection de déconnexion/fermeture d'onglet
+    const handleUnload = () => {
+      // On tente une mise à jour rapide avant la fermeture
+      if (gameIdRef.current && gameState.state === 'WAITING') {
+        const blob = new Blob([JSON.stringify({ 
+          status: 'finished', 
+          state: { ...gameState, winner: 'abandoned' } 
+        })], { type: 'application/json' });
+        // Utilisation de sendBeacon pour garantir l'envoi même si l'onglet ferme
+        // Note: l'URL doit être celle de l'API Supabase, c'est complexe sans client.
+        // On va se contenter d'un update classique en useEffect cleanup.
+      }
+    };
+
+    window.addEventListener('beforeunload', handleUnload);
 
     const channel = supabase
       .channel(`game_realtime:${gameIdRef.current}`)
@@ -175,6 +204,13 @@ export default function Game() {
       .subscribe();
 
     return () => {
+      window.removeEventListener('beforeunload', handleUnload);
+      
+      // Si on quitte alors qu'on est seul en salle d'attente, on ferme la partie
+      if (gameState.state === 'WAITING' && !existingGameId) {
+        supabase.from('games').update({ status: 'finished' }).eq('id', gameIdRef.current);
+      }
+      
       supabase.removeChannel(channel);
     };
   }, [gameIdRef.current, gameState, user?.id, currentPlayer?.id, canProcessAI]);
