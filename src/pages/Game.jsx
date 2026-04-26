@@ -182,7 +182,7 @@ export default function Game() {
 
   // Real-time: Synchronisation de l'état (pour le multi)
   useEffect(() => {
-    if (!gameIdRef.current) return;
+    if (!gameIdRef.current || !user?.id) return;
 
     const gameChannel = supabase
       .channel(`game_sync_${gameIdRef.current}`)
@@ -192,7 +192,7 @@ export default function Game() {
         table: 'games',
         filter: `id=eq.${gameIdRef.current}`
       }, (payload) => {
-        if (payload.new.last_updated_by !== user?.id) {
+        if (payload.new && payload.new.state && payload.new.last_updated_by !== user.id) {
           setGameState(payload.new.state);
         }
       })
@@ -587,16 +587,16 @@ export default function Game() {
       )}
 
       {/* Mobile Top Header (Mockup) */}
-      {isMobile && (
+      {isMobile && currentPlayer && (
         <div className="mobile-game-header animate-fade-in">
           <div className="mgh-turn">
-            <div className="mgh-avatar" style={{ '--p-color': COLOR_HEX[currentPlayer?.color] }}>
-              <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${currentPlayer?.name}`} alt="Avatar" />
+            <div className="mgh-avatar" style={{ '--p-color': COLOR_HEX[currentPlayer.color] || '#ccc' }}>
+              <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${currentPlayer.name || 'Player'}`} alt="Avatar" />
             </div>
             <div className="mgh-turn-info">
               <span className="mgh-turn-label">{isHumanTurn ? "C'EST VOTRE TOUR," : "TOUR DE"}</span>
-              <span className="mgh-turn-name">{currentPlayer?.name}</span>
-              <div className="mgh-status-dot" style={{ backgroundColor: COLOR_HEX[currentPlayer?.color] }} />
+              <span className="mgh-turn-name">{currentPlayer.name}</span>
+              <div className="mgh-status-dot" style={{ backgroundColor: COLOR_HEX[currentPlayer.color] || '#ccc' }} />
             </div>
           </div>
           <div className="mgh-scores">
@@ -708,8 +708,7 @@ export default function Game() {
         {!isMobile && (
           <div className="game-right-panel">
             <div className="right-tabs">
-              <button className={`tab-btn ${activeTab === 'chat' ? 'active' : ''}`} onClick={() => setActiveTab('chat')}>💬 Chat</button>
-              <button className={`tab-btn ${activeTab === 'log' ? 'active' : ''}`} onClick={() => setActiveTab('log')}>📋 Journal</button>
+              <div className="tab-btn active">📋 Journal de partie</div>
             </div>
 
             <div className="tab-content">
