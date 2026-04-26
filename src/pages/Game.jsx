@@ -621,41 +621,135 @@ export default function Game() {
             </span>
           </div>
 
-          {/* Dice Section */}
-          <div className="dice-section-modern">
-            <div className="turn-badge-modern" style={{ borderColor: COLOR_HEX[currentPlayer?.color] }}>
-              <div className="turn-badge-dot" style={{ backgroundColor: COLOR_HEX[currentPlayer?.color] }} />
-              <div className="turn-badge-info">
-                <span className="turn-badge-label">Tour de</span>
-                <span className="turn-badge-name">{currentPlayer?.name}</span>
+  return (
+    <div className="game-page">
+      <Navbar />
+      
+      {/* Top Bar - Desktop only */}
+      {!isMobile && (
+        <div className="game-topbar">
+          <div className="game-info-pills">
+            <div className="game-pill">🎲 {mode}</div>
+            <div className="game-pill gold">💰 {bet.toFixed(2)}€</div>
+            {inviteCode && (
+              <div className="game-pill invite-pill" onClick={copyInviteCode}>
+                <span>Code: {inviteCode}</span>
+                {copied && <span className="copy-hint">Copié!</span>}
               </div>
-            </div>
-
-            <Dice
-              value={gameState.diceValue || lastDiceValue}
-              rolling={diceRolling}
-              onRoll={() => handleRollDice(false)}
-              disabled={gameState.diceRolled || !isHumanTurn || gameState.state === 'WAITING'}
-              currentColor={COLOR_HEX[currentPlayer?.color]}
-              playerName={currentPlayer?.name}
-            />
+            )}
           </div>
-
-          {isHumanTurn && gameState.diceRolled && gameState.movablePieces.length > 0 && (
-            <div className="select-token-hint">
-              ☝️ Sélectionnez un pion lumineux
-            </div>
-          )}
-
-          {!isHumanTurn && (
-            <div className="ai-thinking">
-              <div className="ai-thinking-dots">
-                <span /><span /><span />
-              </div>
-              <span>{currentPlayer?.name} réfléchit...</span>
-            </div>
-          )}
+          <button className="btn btn-ghost btn-sm" onClick={() => setShowQuitConfirm(true)}>
+            🚪 Quitter
+          </button>
         </div>
+      )}
+
+      {/* Mobile Top Header (Mockup) */}
+      {isMobile && (
+        <div className="mobile-game-header animate-fade-in">
+          <div className="mgh-turn">
+            <div className="mgh-avatar" style={{ '--p-color': COLOR_HEX[currentPlayer?.color] }}>
+              <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${currentPlayer?.name}`} alt="Avatar" />
+            </div>
+            <div className="mgh-turn-info">
+              <span className="mgh-turn-label">{isHumanTurn ? "C'EST VOTRE TOUR," : "TOUR DE"}</span>
+              <span className="mgh-turn-name">{currentPlayer?.name}</span>
+              <div className="mgh-status-dot" style={{ backgroundColor: COLOR_HEX[currentPlayer?.color] }} />
+            </div>
+          </div>
+          <div className="mgh-scores">
+            {gameState.players.map(player => {
+              const finished = gameState.tokens[player.color]?.filter(t => t.state === 'FINISHED').length || 0;
+              return (
+                <div key={player.id} className="mgh-score-row">
+                  <div className="mgh-score-dot" style={{ backgroundColor: COLOR_HEX[player.color] }} />
+                  <span className="mgh-score-name">{player.name}</span>
+                  <div className="mgh-score-bar">
+                    <div className="mgh-score-fill" style={{ width: `${(finished / 4) * 100}%`, backgroundColor: COLOR_HEX[player.color] }} />
+                  </div>
+                  <span className="mgh-score-val">{finished}/4</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      <div className="game-layout">
+        {/* Left panel — Desktop only */}
+        {!isMobile && (
+          <div className="game-left-panel">
+            <div className="log-header">👥 Joueurs</div>
+            <div className="players-list">
+              {gameState.players.map((player, idx) => {
+                const isEmpty = !player.id;
+                const isActive = gameState.currentPlayerIndex === idx;
+                const finished = gameState.tokens[player.color]?.filter(t => t.state === 'FINISHED').length || 0;
+                
+                return (
+                  <div
+                    key={player.id || `empty-${idx}`}
+                    className={`player-card ${isActive ? 'active' : ''} ${isEmpty ? 'is-empty' : ''}`}
+                    style={{ '--player-color': COLOR_HEX[player.color] }}
+                  >
+                    <div className="player-color-dot" />
+                    <div className="player-info">
+                      <div className="player-name">
+                        {isEmpty ? 'En attente...' : player.name}
+                        {player.isAI && <span className="ai-tag">IA</span>}
+                      </div>
+                      {!isEmpty && (
+                        <div className="player-tokens-count">
+                          {finished}/4 pions arrivés
+                        </div>
+                      )}
+                    </div>
+                    {isActive && !isEmpty && (
+                      <div className="active-indicator">
+                        {diceRolling && player.isAI ? '🎲' : '▶'}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            <div
+              className="turn-indicator"
+              style={{ '--player-color': COLOR_HEX[currentPlayer?.color] }}
+            >
+              <div className="turn-dot" />
+              <span>
+                {isHumanTurn ? '🎯 Votre tour' : `🤖 ${currentPlayer?.name} joue...`}
+              </span>
+            </div>
+
+            <div className="dice-section-modern">
+              <div className="turn-badge-modern" style={{ borderColor: COLOR_HEX[currentPlayer?.color] }}>
+                <div className="turn-badge-dot" style={{ backgroundColor: COLOR_HEX[currentPlayer?.color] }} />
+                <div className="turn-badge-info">
+                  <span className="turn-badge-label">Tour de</span>
+                  <span className="turn-badge-name">{currentPlayer?.name}</span>
+                </div>
+              </div>
+
+              <Dice
+                value={gameState.diceValue || lastDiceValue}
+                rolling={diceRolling}
+                onRoll={() => handleRollDice(false)}
+                disabled={gameState.diceRolled || !isHumanTurn || gameState.state === 'WAITING'}
+                currentColor={COLOR_HEX[currentPlayer?.color]}
+                playerName={currentPlayer?.name}
+              />
+            </div>
+
+            {isHumanTurn && gameState.diceRolled && gameState.movablePieces.length > 0 && (
+              <div className="select-token-hint">
+                ☝️ Sélectionnez un pion lumineux
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Center — Board */}
         <div className="game-center">
@@ -666,97 +760,105 @@ export default function Game() {
               movablePieces={isHumanTurn ? gameState.movablePieces : []}
             />
           </div>
+          
+          {/* Mobile Dice Section (Mockup) */}
+          {isMobile && (
+            <div className="mobile-dice-section animate-slide-up">
+              <div className="mds-card">
+                <Dice
+                  value={gameState.diceValue || lastDiceValue}
+                  rolling={diceRolling}
+                  onRoll={() => handleRollDice(false)}
+                  disabled={gameState.diceRolled || !isHumanTurn || gameState.state === 'WAITING'}
+                  currentColor={COLOR_HEX[currentPlayer?.color]}
+                  playerName={currentPlayer?.name}
+                />
+                <div className="mds-hint" onClick={() => !gameState.diceRolled && isHumanTurn && handleRollDice(false)}>
+                  {gameState.diceRolled 
+                    ? (gameState.movablePieces.length > 0 ? "CHOISISSEZ UN PION" : "PAS DE MOUVEMENT") 
+                    : "CLIQUEZ POUR LANCER"}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Right panel — Log & Chat */}
-        <div className="game-right-panel">
-          <div className="right-tabs">
-            <button 
-              className={`tab-btn ${activeTab === 'chat' ? 'active' : ''}`}
-              onClick={() => setActiveTab('chat')}
-            >
-              💬 Chat
-            </button>
-            <button 
-              className={`tab-btn ${activeTab === 'log' ? 'active' : ''}`}
-              onClick={() => setActiveTab('log')}
-            >
-              📋 Journal
-            </button>
-          </div>
+        {/* Right panel — Desktop only */}
+        {!isMobile && (
+          <div className="game-right-panel">
+            <div className="right-tabs">
+              <button className={`tab-btn ${activeTab === 'chat' ? 'active' : ''}`} onClick={() => setActiveTab('chat')}>💬 Chat</button>
+              <button className={`tab-btn ${activeTab === 'log' ? 'active' : ''}`} onClick={() => setActiveTab('log')}>📋 Journal</button>
+            </div>
 
-          <div className="tab-content">
-            {activeTab === 'log' ? (
-              <div className="game-log" ref={logRef}>
-                {displayLog.length === 0 ? (
-                  <div className="log-empty">La partie commence...</div>
-                ) : (
-                  displayLog.map((entry, i) => (
-                    <div key={i} className="log-entry">
-                      <span className="log-time">
-                        {new Date(entry.time).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-                      </span>
-                      <span className="log-text">{entry.text}</span>
-                    </div>
-                  ))
-                )}
-              </div>
-            ) : (
-              <div className="chat-container">
-                <div className="chat-messages">
-                  {messages.length === 0 ? (
-                    <div className="log-empty">Pas encore de messages.</div>
+            <div className="tab-content">
+              {activeTab === 'log' ? (
+                <div className="game-log" ref={logRef}>
+                  {displayLog.length === 0 ? (
+                    <div className="log-empty">La partie commence...</div>
                   ) : (
-                    messages.map((msg, i) => (
+                    displayLog.map((entry, i) => (
+                      <div key={i} className="log-entry">
+                        <span className="log-time">{new Date(entry.time).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
+                        <span className="log-text">{entry.text}</span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              ) : (
+                <div className="chat-container">
+                  <div className="chat-messages">
+                    {messages.length === 0 ? <div className="log-empty">Pas encore de messages.</div> : messages.map((msg, i) => (
                       <div key={msg.id || i} className={`chat-bubble ${msg.user_id === user?.id ? 'mine' : ''}`}>
                         <div className="chat-author">{msg.username}</div>
                         <div className="chat-content">{msg.content}</div>
                       </div>
-                    ))
-                  )}
-                  <div ref={chatEndRef} />
-                </div>
-                <form className="chat-input-form" onSubmit={handleSendMessage}>
-                  <input 
-                    type="text" 
-                    placeholder="Votre message..." 
-                    className="input chat-input"
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                  />
-                  <button type="submit" className="chat-send-btn">
-                    ✈️
-                  </button>
-                </form>
-              </div>
-            )}
-          </div>
-
-          {/* Score */}
-          <div className="score-section">
-            <div className="log-header">📊 Progression</div>
-            {gameState.players.map(player => {
-              const finished = gameState.tokens[player.color]?.filter(t => t.state === 'FINISHED').length || 0;
-              return (
-                <div
-                  key={player.id}
-                  className="score-row"
-                  style={{ '--player-color': COLOR_HEX[player.color] }}
-                >
-                  <span className="score-name">{player.name}</span>
-                  <div className="score-bar">
-                    <div
-                      className="score-fill"
-                      style={{ width: `${(finished / 4) * 100}%` }}
-                    />
+                    ))}
+                    <div ref={chatEndRef} />
                   </div>
-                  <span className="score-pions">{finished}/4</span>
+                  <form className="chat-input-form" onSubmit={handleSendMessage}>
+                    <input type="text" placeholder="Votre message..." className="input chat-input" value={newMessage} onChange={(e) => setNewMessage(e.target.value)} />
+                    <button type="submit" className="chat-send-btn">✈️</button>
+                  </form>
                 </div>
-              );
-            })}
+              )}
+            </div>
+
+            <div className="score-section">
+              <div className="log-header">📊 Progression</div>
+              {gameState.players.map(player => {
+                const finished = gameState.tokens[player.color]?.filter(t => t.state === 'FINISHED').length || 0;
+                return (
+                  <div key={player.id} className="score-row" style={{ '--player-color': COLOR_HEX[player.color] }}>
+                    <span className="score-name">{player.name}</span>
+                    <div className="score-bar"><div className="score-fill" style={{ width: `${(finished / 4) * 100}%` }} /></div>
+                    <span className="score-pions">{finished}/4</span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
-        </div>
+        )}
       </div>
+
+      {/* Mobile Tab Bar (Mockup) */}
+      {isMobile && (
+        <div className="mobile-tab-bar">
+          <button className={`mtb-item ${activeTab === 'game' ? 'active' : ''}`} onClick={() => setActiveTab('game')}>
+            <span className="mtb-icon">🔲</span>
+          </button>
+          <button className={`mtb-item ${activeTab === 'players' ? 'active' : ''}`} onClick={() => setActiveTab('players')}>
+            <span className="mtb-icon">👥</span>
+          </button>
+          <button className={`mtb-item ${activeTab === 'chat' ? 'active' : ''}`} onClick={() => setActiveTab('chat')}>
+            <span className="mtb-icon">💬</span>
+            {messages.length > 0 && <span className="mtb-badge">1</span>}
+          </button>
+          <button className={`mtb-item ${activeTab === 'leaderboard' ? 'active' : ''}`} onClick={() => navigate('/leaderboard')}>
+            <span className="mtb-icon">🏆</span>
+          </button>
+        </div>
+      )}
 
       {/* Winner Modal */}
       {showWinner && gameState.winner && (
@@ -766,26 +868,11 @@ export default function Game() {
               <>
                 <div className="winner-emoji">🏆</div>
                 <h2 className="text-gradient-gold">Félicitations !</h2>
-                <p style={{ fontSize: 'var(--text-xl)', marginBottom: 'var(--space-2)' }}>
-                  Vous avez gagné la partie !
-                </p>
-                {bet > 0 && (
-                  <div className="winner-prize">
-                    <span>💰 Gains</span>
-                    <span className="prize-amount">+{winnings}€</span>
-                  </div>
-                )}
+                <p style={{ fontSize: 'var(--text-xl)', marginBottom: 'var(--space-2)' }}>Vous avez gagné la partie !</p>
+                {bet > 0 && <div className="winner-prize"><span>💰 Gains</span><span className="prize-amount">+{winnings}€</span></div>}
                 <div className="confetti-container">
                   {[...Array(20)].map((_, i) => (
-                    <div
-                      key={i}
-                      className="confetti-piece"
-                      style={{
-                        left: `${Math.random() * 100}%`,
-                        animationDelay: `${Math.random() * 2}s`,
-                        backgroundColor: ['#F5C518', '#EF4444', '#3B82F6', '#22C55E'][i % 4],
-                      }}
-                    />
+                    <div key={i} className="confetti-piece" style={{ left: `${Math.random() * 100}%`, animationDelay: `${Math.random() * 2}s`, backgroundColor: ['#F5C518', '#EF4444', '#3B82F6', '#22C55E'][i % 4] }} />
                   ))}
                 </div>
               </>
@@ -794,34 +881,14 @@ export default function Game() {
                 <div className="winner-emoji">😔</div>
                 <h2>Partie terminée</h2>
                 <p style={{ marginBottom: 'var(--space-4)', fontSize: 'var(--text-lg)' }}>
-                  <span style={{ color: COLOR_HEX[gameState.winner] }}>
-                    {gameState.players.find(p => p.color === gameState.winner)?.name}
-                  </span>
-                  {' '}a remporté la victoire !
+                  <span style={{ color: COLOR_HEX[gameState.winner] }}>{gameState.players.find(p => p.color === gameState.winner)?.name}</span> a remporté la victoire !
                 </p>
-                {bet > 0 && (
-                  <p style={{ color: '#FCA5A5', fontSize: 'var(--text-base)' }}>
-                    Mise perdue : {bet}€
-                  </p>
-                )}
+                {bet > 0 && <p style={{ color: '#FCA5A5', fontSize: 'var(--text-base)' }}>Mise perdue : {bet}€</p>}
               </>
             )}
-
             <div style={{ display: 'flex', gap: 'var(--space-3)', marginTop: 'var(--space-8)' }}>
-              <button
-                className="btn btn-ghost"
-                onClick={() => navigate('/lobby')}
-                id="back-to-lobby-btn"
-              >
-                ← Retour au lobby
-              </button>
-              <button
-                className="btn btn-gold"
-                onClick={handleRestart}
-                id="play-again-btn"
-              >
-                🎲 Rejouer
-              </button>
+              <button className="btn btn-ghost" onClick={() => navigate('/lobby')} id="back-to-lobby-btn">← Retour au lobby</button>
+              <button className="btn btn-gold" onClick={handleRestart} id="play-again-btn">🎲 Rejouer</button>
             </div>
           </div>
         </div>
@@ -833,39 +900,10 @@ export default function Game() {
           <div className="winner-modal animate-bounce-in" style={{ textAlign: 'center', padding: 'var(--space-10)' }}>
             <div className="spinner" style={{ width: 60, height: 60, margin: '0 auto var(--space-6)' }} />
             <h2 className="text-gradient-gold">Salle d'attente</h2>
-            <p style={{ color: 'var(--text-secondary)', marginBottom: 'var(--space-6)' }}>
-              En attente de joueurs... La partie commencera dès que l'adversaire aura rejoint.
-            </p>
-            {bet > 0 && (
-              <div className="escrow-badge" style={{ 
-                background: 'rgba(245, 158, 11, 0.1)', 
-                border: '1px solid #F59E0B', 
-                color: '#F59E0B', 
-                padding: '8px 16px', 
-                borderRadius: '20px',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 8,
-                marginBottom: 'var(--space-6)',
-                fontSize: 'var(--text-sm)',
-                fontWeight: 600
-              }}>
-                <span style={{ fontSize: '1.2em' }}>💰</span> Mise de {bet.toFixed(2)}€ prélevée au lancement
-              </div>
-            )}
-            {inviteCode && (
-              <div className="join-code-display" style={{ background: 'var(--bg-glass)', padding: 'var(--space-4)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-glass)' }}>
-                <p style={{ fontSize: 'var(--text-xs)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>
-                  Code d'invitation
-                </p>
-                <p style={{ fontSize: 'var(--text-2xl)', fontWeight: 800, letterSpacing: '0.1em', color: 'var(--gold-primary)' }}>
-                  {inviteCode}
-                </p>
-              </div>
-            )}
-            <button className="btn btn-ghost" onClick={handleCancelWaiting} style={{ marginTop: 'var(--space-8)' }}>
-              Annuler et quitter
-            </button>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: 'var(--space-6)' }}>En attente de joueurs... La partie commencera dès que l'adversaire aura rejoint.</p>
+            {bet > 0 && <div className="escrow-badge" style={{ background: 'rgba(245, 158, 11, 0.1)', border: '1px solid #F59E0B', color: '#F59E0B', padding: '8px 16px', borderRadius: '20px', display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: 'var(--space-6)', fontSize: 'var(--text-sm)', fontWeight: 600 }}><span style={{ fontSize: '1.2em' }}>💰</span> Mise de {bet.toFixed(2)}€ prélevée au lancement</div>}
+            {inviteCode && <div className="join-code-display" style={{ background: 'var(--bg-glass)', padding: 'var(--space-4)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-glass)' }}><p style={{ fontSize: 'var(--text-xs)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>Code d'invitation</p><p style={{ fontSize: 'var(--text-2xl)', fontWeight: 800, letterSpacing: '0.1em', color: 'var(--gold-primary)' }}>{inviteCode}</p></div>}
+            <button className="btn btn-ghost" onClick={handleCancelWaiting} style={{ marginTop: 'var(--space-8)' }}>Annuler et quitter</button>
           </div>
         </div>
       )}
@@ -875,20 +913,8 @@ export default function Game() {
         <div className="modal-overlay" onClick={() => setShowQuitConfirm(false)}>
           <div className="modal-content" onClick={e => e.stopPropagation()} id="quit-modal">
             <h3 style={{ marginBottom: 'var(--space-3)' }}>⚠️ Quitter la partie ?</h3>
-            <p style={{ marginBottom: 'var(--space-6)' }}>
-              {bet > 0
-                ? `Vous perdrez votre mise de ${bet}€ si vous quittez maintenant.`
-                : 'Votre partie en cours sera perdue.'
-              }
-            </p>
-            <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
-              <button className="btn btn-ghost w-full" onClick={() => setShowQuitConfirm(false)}>
-                Continuer à jouer
-              </button>
-              <button className="btn btn-danger w-full" onClick={handleQuit} id="confirm-quit-btn">
-                Quitter
-              </button>
-            </div>
+            <p style={{ marginBottom: 'var(--space-6)' }}>{bet > 0 ? `Vous perdrez votre mise de ${bet}€ si vous quittez maintenant.` : 'Votre partie en cours sera perdue.'}</p>
+            <div style={{ display: 'flex', gap: 'var(--space-3)' }}><button className="btn btn-ghost w-full" onClick={() => setShowQuitConfirm(false)}>Continuer à jouer</button><button className="btn btn-danger w-full" onClick={handleQuit} id="confirm-quit-btn">Quitter</button></div>
           </div>
         </div>
       )}

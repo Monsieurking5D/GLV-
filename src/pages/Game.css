@@ -580,27 +580,217 @@
 .chat-send-btn:hover { transform: scale(1.05); }
 .chat-send-btn:active { transform: scale(0.95); }
 
-/* Responsive */
-@media (max-width: 1100px) {
-  .game-layout {
-    grid-template-columns: 180px 1fr 180px;
-  }
+/* Mobile Mockup Styles */
+.mobile-game-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--bg-card);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  margin: var(--space-4) var(--space-4) 0;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
 }
 
+.mgh-turn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex: 1;
+}
+
+.mgh-avatar {
+  width: 48px;
+  height: 48px;
+  background: var(--bg-deep);
+  border: 2px solid var(--p-color);
+  border-radius: 50%;
+  padding: 2px;
+  position: relative;
+}
+
+.mgh-avatar img { width: 100%; height: 100%; border-radius: 50%; }
+
+.mgh-turn-info {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.mgh-turn-label {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.mgh-turn-name {
+  font-family: 'Outfit', sans-serif;
+  font-size: var(--text-lg);
+  font-weight: 800;
+  color: #FCA5A5; /* Match mockup red-ish name */
+}
+
+.mgh-status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  position: absolute;
+  left: -2px;
+  bottom: -2px;
+  border: 2px solid var(--bg-card);
+  animation: pulse-gold 1.5s infinite;
+}
+
+.mgh-scores {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 140px;
+}
+
+.mgh-score-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mgh-score-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.mgh-score-name {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  width: 60px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mgh-score-bar {
+  flex: 1;
+  height: 3px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.mgh-score-fill {
+  height: 100%;
+  border-radius: 2px;
+}
+
+.mgh-score-val {
+  font-size: 10px;
+  color: var(--text-muted);
+  width: 24px;
+  text-align: right;
+}
+
+/* Mobile Dice Section */
+.mobile-dice-section {
+  width: 100%;
+  padding: var(--space-4);
+  margin-top: var(--space-2);
+}
+
+.mds-card {
+  background: linear-gradient(180deg, rgba(20,20,50,0.8) 0%, rgba(10,10,30,0.95) 100%);
+  border: 1.5px solid rgba(245,197,24,0.15);
+  border-radius: var(--radius-xl);
+  padding: var(--space-8) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-6);
+  box-shadow: 0 15px 40px rgba(0,0,0,0.5), inset 0 0 30px rgba(245,197,24,0.05);
+}
+
+.mds-hint {
+  font-family: 'Outfit', sans-serif;
+  font-size: var(--text-lg);
+  font-weight: 800;
+  color: var(--gold-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  text-shadow: 0 0 15px rgba(245,197,24,0.4);
+}
+
+/* Mobile Tab Bar */
+.mobile-tab-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 80px;
+  background: rgba(7, 7, 26, 0.95);
+  backdrop-filter: blur(20px);
+  border-top: 1px solid var(--border-glass);
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding-bottom: 20px; /* Safe area */
+  z-index: 1000;
+}
+
+.mtb-item {
+  background: none;
+  border: none;
+  padding: var(--space-2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  cursor: pointer;
+}
+
+.mtb-icon {
+  font-size: 24px;
+  color: var(--text-muted);
+  transition: all 0.3s ease;
+}
+
+.mtb-item.active .mtb-icon {
+  color: var(--gold-primary);
+  transform: scale(1.1);
+  filter: drop-shadow(0 0 10px rgba(245,197,24,0.5));
+}
+
+.mtb-badge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: #EF4444;
+  color: white;
+  font-size: 10px;
+  font-weight: 800;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #07071A;
+}
+
+/* Responsive */
 @media (max-width: 800px) {
+  .game-page { padding-bottom: 80px; }
   .game-layout {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto auto auto;
+    display: flex;
+    flex-direction: column;
+    padding: var(--space-2);
+    gap: var(--space-2);
   }
-
-  .game-right-panel { display: none; }
-
-  .board-container { max-width: min(90vw, 450px); }
-
-  .game-left-panel {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+  .game-center { width: 100%; order: 1; }
+  .board-container { 
+    max-width: 95vw; 
+    border-radius: var(--radius-lg);
+    box-shadow: 0 0 40px rgba(245,197,24,0.15);
   }
-
-  .players-list { grid-column: 1 / -1; }
 }
