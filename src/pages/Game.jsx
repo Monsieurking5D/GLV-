@@ -58,12 +58,21 @@ export default function Game() {
     isSolo = false
   } = location.state || {};
 
+  // CRITIQUE: On attend que l'utilisateur soit chargé pour éviter tout crash
+  if (!user) {
+    return (
+      <div className="game-page" style={{ justifyContent: 'center', alignItems: 'center' }}>
+        <div className="loader-gold"></div>
+        <p style={{ marginTop: 'var(--space-4)', color: 'var(--gold-primary)' }}>Authentification en cours...</p>
+      </div>
+    );
+  }
+
   const queryParams = new URLSearchParams(location.search);
   const urlGameId = queryParams.get('id');
 
   // Build players list
-  const buildPlayers = useCallback(() => {
-    const human = { ...HUMAN_PLAYER };
+    const human = { id: user.id, name: profile?.username || 'Vous', color: 'red', isAI: false };
     if (mode === 'solo') {
       return [human, makeAIPlayer('green', 'Mario', difficulty)];
     }
@@ -77,7 +86,7 @@ export default function Game() {
       return [human, makeAIPlayer('green', 'IA 1', difficulty), makeAIPlayer('blue', 'IA 2', difficulty), makeAIPlayer('yellow', 'IA 3', difficulty)];
     }
     return [human, makeAIPlayer('green', 'IA', difficulty)];
-  }, [mode, difficulty]);
+  }, [mode, difficulty, user.id, profile?.username]);
 
   const [players] = useState(() => {
     if (initialPlayers.length > 0) return initialPlayers;
@@ -556,12 +565,13 @@ export default function Game() {
     setDiceRolling(false);
   };
 
-  const myPlayer = players.find(p => p.id === user?.id);
-  const winnerIsHuman = gameState.winner === myPlayer?.color;
-  const potTotal = bet * gameState.players.length;
+  const myPlayer = (players || []).find(p => p.id === user?.id);
+  const winnerIsHuman = gameState?.winner === myPlayer?.color;
+  const numPlayers = gameState?.players?.length || 2;
+  const potTotal = bet * numPlayers;
   const commission = Math.min(potTotal * 0.10, 3.00);
   const winnings = winnerIsHuman ? (potTotal - commission).toFixed(2) : 0;
-  const displayLog = [...gameState.log].slice(-20).reverse();
+  const displayLog = [...(gameState?.log || [])].slice(-20).reverse();
 
   return (
     <div className="game-page">
