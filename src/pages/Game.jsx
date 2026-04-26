@@ -40,6 +40,9 @@ export default function Game() {
     isSolo = false
   } = location.state || {};
 
+  const queryParams = new URLSearchParams(location.search);
+  const urlGameId = queryParams.get('id');
+
   // Build players list
   const buildPlayers = useCallback(() => {
     const human = { ...HUMAN_PLAYER };
@@ -91,10 +94,41 @@ export default function Game() {
     setTimeout(() => setToast(null), 2500);
   };
 
-  // Persistence: Sauvegarder la partie initialement (si créateur)
+  // Persistence: Sauvegarder la partie initialement ou la restaurer
   useEffect(() => {
     const initGame = async () => {
-      if (!user || existingGameId) return;
+      if (!user) return;
+
+      // 1. Tenter de restaurer via l'URL si le state est perdu (ex: refresh)
+      if (urlGameId && !existingGameId) {
+        try {
+          const { data, error } = await supabase
+            .from('games')
+            .select('*')
+            .eq('id', urlGameId)
+            .single();
+          
+          if (data && data.status === 'active') {
+            gameIdRef.current = data.id;
+            setGameState(data.state);
+            // On ne return pas, on laisse le flux continuer si besoin
+            return;
+          }
+        } catch (err) {
+          console.error("Erreur restauration game:", err);
+        }
+      }
+
+      // 2. Si on a déjà un gameId (venant du Lobby), on ne fait rien de plus
+      if (existingGameId) {
+        // S'assurer que l'URL contient l'ID pour les prochains refresh
+        if (!urlGameId) {
+          window.history.replaceState(null, '', `/game?id=${existingGameId}`);
+        }
+        return;
+      }
+
+      // 3. Sinon, on crée une nouvelle partie en base
       try {
         const { data, error } = await supabase
           .from('games')
@@ -113,14 +147,18 @@ export default function Game() {
           .select()
           .single();
         
-        if (data) gameIdRef.current = data.id;
+        if (data) {
+          gameIdRef.current = data.id;
+          // Mettre à jour l'URL pour permettre le refresh
+          window.history.replaceState(null, '', `/game?id=${data.id}`);
+        }
         if (error) console.error("Erreur init game:", error);
       } catch (err) {
         console.error("Crash init game:", err);
       }
     };
     initGame();
-  }, []);
+  }, [user?.id]);
 
   // Persistence: Mettre à jour la partie à chaque changement d'état
   useEffect(() => {
