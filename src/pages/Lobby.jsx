@@ -182,17 +182,18 @@ export default function Lobby() {
         { id: profile.id, name: profile.username, color: 'red', isAI: false }
       ];
 
-      // Remplir les slots restants avec des IAs (qui seront remplacées en multi)
-      const totalSlots = isSoloMode ? (selectedMode === '1v1' || selectedMode === 'solo' ? 2 : (selectedMode === '1v1v1' ? 3 : 4)) : currentMode.players;
+      // En multi, on ne met PAS d'IA, on laisse les slots vides (Waiting)
+      // En solo, on met Mario
+      const totalSlots = isSoloMode ? 2 : currentMode.players;
       
-      const colors = ['red', 'green', 'blue', 'yellow']; // Ordre modifié pour que 1v1 soit Rouge/Vert (index 0 et 1)
+      const colors = ['red', 'green', 'blue', 'yellow'];
       for (let i = 1; i < totalSlots; i++) {
         const color = colors[i];
         initialPlayers.push({ 
-          id: `ai_${color}`, 
-          name: isSoloMode ? 'IA' : `Place libre`, 
+          id: isSoloMode ? `ai_${color}` : null, // null signifie slot vide en multi
+          name: isSoloMode ? 'Mario' : 'En attente...', 
           color: color, 
-          isAI: true, 
+          isAI: isSoloMode, 
           difficulty: selectedDifficulty 
         });
       }
@@ -237,13 +238,13 @@ export default function Lobby() {
       // Mettre à jour la partie
       const newParticipantIds = [...(game.participant_ids || []), profile.id];
       const updatedPlayers = [...game.players];
-      const aiIndex = updatedPlayers.findIndex(p => p.isAI);
+      const emptySlotIndex = updatedPlayers.findIndex(p => p.id === null || p.id.startsWith('ai_'));
       
-      if (aiIndex !== -1) {
-        updatedPlayers[aiIndex] = {
+      if (emptySlotIndex !== -1) {
+        updatedPlayers[emptySlotIndex] = {
           id: profile.id,
           name: profile.username,
-          color: updatedPlayers[aiIndex].color,
+          color: updatedPlayers[emptySlotIndex].color,
           isAI: false,
           bet_paid: game.bet_amount > 0
         };

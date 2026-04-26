@@ -578,11 +578,12 @@ export default function Game() {
           <div className="players-list">
             {gameState.players.map((player, idx) => {
               const isActive = idx === gameState.currentPlayerIndex;
+              const isEmpty = !player.id;
               const finishedCount = gameState.tokens[player.color]?.filter(t => t.state === 'FINISHED').length || 0;
               return (
                 <div
-                  key={player.id}
-                  className={`player-card ${isActive ? 'active' : ''}`}
+                  key={player.color}
+                  className={`player-card ${isActive ? 'active' : ''} ${isEmpty ? 'waiting' : ''}`}
                   style={{ '--player-color': COLOR_HEX[player.color] }}
                   id={`player-${player.color}`}
                 >
@@ -590,13 +591,15 @@ export default function Game() {
                   <div className="player-info">
                     <span className="player-name">
                       {player.name}
-                      {player.isAI && <span className="ai-tag">IA</span>}
+                      {player.isAI && <span className="ai-tag">Mario</span>}
                     </span>
-                    <div className="player-tokens-count">
-                      {'🏠'.repeat(4 - finishedCount)}{'🏁'.repeat(finishedCount)}
-                    </div>
+                    {!isEmpty && (
+                      <div className="player-tokens-count">
+                        {'🏠'.repeat(4 - finishedCount)}{'🏁'.repeat(finishedCount)}
+                      </div>
+                    )}
                   </div>
-                  {isActive && (
+                  {isActive && !isEmpty && (
                     <div className="active-indicator">
                       {diceRolling && player.isAI ? '🎲' : '▶'}
                     </div>

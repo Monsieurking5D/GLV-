@@ -246,8 +246,12 @@ const LudoBoard = memo(({ gameState, onTokenClick, movablePieces = [] }) => {
         );
       })()}
 
-      {tokens && Object.values(tokens).map((arr) =>
-        arr.map((token) => {
+      {tokens && Object.values(tokens).map((arr) => {
+        // Ne rendre les pions que si le joueur correspondant existe (id non null)
+        const player = gameState.players.find(p => p.color === arr[0].color);
+        if (!player || !player.id) return null;
+
+        return arr.map((token) => {
           const { x: bx, y: by } = getTokenXY(token);
           return (
             <Token 
@@ -261,8 +265,8 @@ const LudoBoard = memo(({ gameState, onTokenClick, movablePieces = [] }) => {
               getStackOffset={getStackOffset}
             />
           );
-        })
-      )}
+        });
+      })}
       <rect x="1.5" y="1.5" width={S - 3} height={S - 3} fill="none" stroke="#F5C518" strokeWidth="3" rx="6" />
     </svg>
   );
