@@ -28,11 +28,18 @@ const VersionChecker = () => {
         const data = await res.json();
         
         if (currentVersion && data.version && data.version !== currentVersion) {
-          console.log("🚀 Nouvelle version détectée ! Mise à jour...");
+          console.log("🚀 Nouvelle version détectée ! Déconnexion de sécurité et mise à jour...");
           
-          // On peut afficher un petit toast ou forcer direct
-          // Ici on force le rechargement en ignorant le cache
-          window.location.reload(true);
+          try {
+            // Importer dynamiquement pour éviter les dépendances lourdes si pas besoin
+            const { supabase } = await import('../lib/supabase');
+            await supabase.auth.signOut();
+          } catch (e) {
+            console.error("Erreur lors de la déconnexion auto:", e);
+          }
+
+          // Force le rechargement pour charger le nouveau JS
+          window.location.reload();
         }
       } catch (err) {
         // Erreur silencieuse (ex: offline)
