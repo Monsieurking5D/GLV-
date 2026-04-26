@@ -69,6 +69,12 @@ const STEPS = [
 export default function Landing() {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/lobby');
+    }
+  }, [isAuthenticated, navigate]);
   
   const [featuresRef, featuresVisible] = useReveal();
   const [stepsRef, stepsVisible] = useReveal();
