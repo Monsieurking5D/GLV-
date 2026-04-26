@@ -329,35 +329,35 @@ const LudoBoard = memo(({ gameState, onTokenClick, movablePieces = [] }) => {
                 />
               )}
 
-              {/* Forme de goutte blanche (Map Pin) plus courte */}
+              {/* Forme de goutte blanche (Map Pin) mieux centrée */}
               <path
                 d={`
-                  M ${x} ${y + pinR * 0.95}
-                  L ${x - pinR * 0.75} ${y - pinR * 0.2}
-                  A ${pinR} ${pinR} 0 1 1 ${x + pinR * 0.75} ${y - pinR * 0.2}
+                  M ${x} ${y + pinR * 0.65}
+                  L ${x - pinR * 0.85} ${y - pinR * 0.15}
+                  A ${pinR} ${pinR} 0 1 1 ${x + pinR * 0.85} ${y - pinR * 0.15}
                   Z
                 `}
                 fill="#FFFFFF"
                 filter="url(#lb-pin-shadow)"
-                stroke="rgba(0,0,0,0.1)"
+                stroke="rgba(0,0,0,0.08)"
                 strokeWidth="0.5"
               />
               
-              {/* Cercle de couleur intérieur */}
+              {/* Cercle de couleur intérieur — mieux aligné avec le centre (x, y) */}
               <circle 
                 cx={x} 
-                cy={y - pinR * 0.35} 
-                r={pinR * 0.5} 
+                cy={y - pinR * 0.25} 
+                r={pinR * 0.58} 
                 fill={mainColor} 
               />
 
               {/* Reflet sur le cercle intérieur */}
               <circle 
-                cx={x - pinR * 0.2} 
+                cx={x - pinR * 0.25} 
                 cy={y - pinR * 0.45} 
-                r={pinR * 0.15} 
+                r={pinR * 0.18} 
                 fill="#FFFFFF" 
-                opacity="0.3" 
+                opacity="0.35" 
               />
             </g>
           );
