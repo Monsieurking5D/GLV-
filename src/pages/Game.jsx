@@ -829,10 +829,3 @@ export default function Game() {
     </div>
   );
 }
-me="btn btn-danger w-full" onClick={handleQuit} id="confirm-quit-btn">Quitter</button></div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
