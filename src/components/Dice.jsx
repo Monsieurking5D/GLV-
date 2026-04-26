@@ -20,6 +20,7 @@ const Dice = memo(({
   onRoll,
   disabled = false,
   currentColor = '#1f2937',
+  playerName = 'Joueur',
 }) => {
   const dots = value && !rolling ? DOT_POSITIONS[value] || [] : [];
   const clickable = !disabled && !rolling && typeof onRoll === 'function';
@@ -68,8 +69,8 @@ const Dice = memo(({
           ? 'Lancement…'
           : value
             ? value === 6
-              ? 'SIX ! Vous rejouez'
-              : `Vous avez fait ${value}`
+              ? `${playerName} a fait 6 ! Rejoue`
+              : `${playerName} a fait ${value}`
             : clickable
               ? 'Cliquez pour lancer'
               : 'En attente'}

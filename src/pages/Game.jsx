@@ -630,6 +630,7 @@ export default function Game() {
               onRoll={() => handleRollDice(false)}
               disabled={gameState.diceRolled || !isHumanTurn || gameState.state === 'WAITING'}
               currentColor={COLOR_HEX[currentPlayer?.color]}
+              playerName={currentPlayer?.name}
             />
           </div>
 
