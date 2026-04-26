@@ -352,6 +352,7 @@ const LudoBoard = memo(({ gameState, onTokenClick, movablePieces = [] }) => {
         rx="6"
       />
     </svg>
+  );
 });
 
 export default LudoBoard;
