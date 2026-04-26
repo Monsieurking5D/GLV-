@@ -402,12 +402,13 @@ export default function Game() {
       }, getAIThinkingDelay(currentPlayer.difficulty));
     } else if (gameState.movablePieces.length > 0) {
       // AI picks token
+      // On rajoute un délai supplémentaire après le dé pour que l'utilisateur voie le résultat
       aiTimeoutRef.current = setTimeout(() => {
         const tokenId = getAIMove(gameState, currentPlayer.difficulty);
         if (tokenId !== null) {
           setGameState(prev => moveToken(prev, tokenId));
         }
-      }, getAIThinkingDelay(currentPlayer.difficulty));
+      }, getAIThinkingDelay(currentPlayer.difficulty) + 1000); // +1s pour laisser voir le dé
     }
 
     return () => clearTimeout(aiTimeoutRef.current);
