@@ -2,6 +2,7 @@
 // Plateau de jeu Ludo classique — SVG 15x15 (style coloré clair)
 // API conservée: { gameState, onTokenClick, movablePieces }
 
+import { memo } from 'react';
 import {
   MAIN_PATH_COORDS,
   HOME_STRETCH_COORDS,
@@ -84,7 +85,7 @@ function isPathCell(col, row) {
 
 // --- Composant ------------------------------------------------------------
 
-export default function LudoBoard({ gameState, onTokenClick, movablePieces = [] }) {
+const LudoBoard = memo(({ gameState, onTokenClick, movablePieces = [] }) => {
   if (!gameState) return null;
 
   const { tokens, players, currentPlayerIndex } = gameState;
@@ -351,5 +352,6 @@ export default function LudoBoard({ gameState, onTokenClick, movablePieces = [] 
         rx="6"
       />
     </svg>
-  );
-}
+});
+
+export default LudoBoard;

@@ -1,4 +1,5 @@
 // src/components/Dice.jsx
+import { memo } from 'react';
 // Dé classique blanc à points noirs, avec animation de lancer.
 // API conservée: { value, rolling, onRoll, disabled, currentColor }
 
@@ -13,13 +14,13 @@ const DOT_POSITIONS = {
   6: [[25, 22], [75, 22], [25, 50], [75, 50], [25, 78], [75, 78]],
 };
 
-export default function Dice({
+const Dice = memo(({
   value,
   rolling = false,
   onRoll,
   disabled = false,
   currentColor = '#1f2937',
-}) {
+}) => {
   const dots = value && !rolling ? DOT_POSITIONS[value] || [] : [];
   const clickable = !disabled && !rolling && typeof onRoll === 'function';
 
@@ -75,4 +76,6 @@ export default function Dice({
       </div>
     </div>
   );
-}
+});
+
+export default Dice;
