@@ -425,11 +425,32 @@ export default function Game() {
       const value = rollDice();
       setGameState(prev => {
         const newState = processDiceRoll(prev, value);
-        // Auto-select if only one piece can move
+        
+        // Si aucun pion ne peut bouger, on veut laisser le dé affiché un moment
+        // avant de passer au joueur suivant.
+        if (newState.currentPlayerIndex !== prev.currentPlayerIndex) {
+          // On crée un état intermédiaire où le dé est affiché mais le tour n'a pas encore changé
+          const intermediateState = {
+            ...prev,
+            diceValue: value,
+            diceRolled: true,
+            movablePieces: [],
+            log: [...prev.log, { text: `🎲 ${prev.players[prev.currentPlayerIndex].color} lance ${value} (aucun mouvement possible)`, time: Date.now() }]
+          };
+          
+          setTimeout(() => {
+            setGameState(newState);
+          }, 1500); // 1.5 seconde de visibilité
+          
+          setDiceRolling(false);
+          return intermediateState;
+        }
+
+        // Sinon, comportement normal
         const auto = autoSelectIfOnePiece(newState);
+        setDiceRolling(false);
         return auto || newState;
       });
-      setDiceRolling(false);
     }, rollDelay);
   }, [diceRolling, isHumanTurn, gameState.diceRolled]);
 
