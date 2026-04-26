@@ -60,7 +60,7 @@ export default function Navbar() {
     <nav className="navbar">
       <div className="navbar-inner">
         {/* Logo */}
-        <div className="navbar-logo" onClick={() => handleNavigate('/')} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && handleNavigate('/')} aria-label="Accueil">
+        <div className="navbar-logo" onClick={() => handleNavigate(isAuthenticated ? '/lobby' : '/')} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && handleNavigate(isAuthenticated ? '/lobby' : '/')} aria-label="Accueil">
           <div className="logo-icon">
             <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
               <rect width="40" height="40" rx="10" fill="url(#logoGrad)"/>
