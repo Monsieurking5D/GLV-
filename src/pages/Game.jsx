@@ -70,6 +70,7 @@ export default function Game() {
   const [isEnding, setIsEnding] = useState(false);
   const [toast, setToast] = useState(null);
   const [activeTab, setActiveTab] = useState('chat'); // 'log' or 'chat'
+  const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [lastDiceValue, setLastDiceValue] = useState(null);
   
