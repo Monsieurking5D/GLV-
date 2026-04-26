@@ -171,14 +171,7 @@ export default function Lobby() {
     setIsStarting(true);
 
     try {
-      // Débiter la mise avant de lancer la partie
-      if (!isSoloMode) {
-        await addTransaction({
-          type: 'bet',
-          amount: -selectedBet,
-          description: `🎲 Mise pour partie ${currentMode.label}`
-        });
-      }
+      // Suppression du prélèvement immédiat - sera fait au lancement réel de la partie (PLAYING)
 
       let code = null;
       if (isPrivate) {
@@ -239,14 +232,7 @@ export default function Lobby() {
         return;
       }
 
-      // Débiter la mise
-      if (game.bet_amount > 0) {
-        await addTransaction({
-          type: 'bet',
-          amount: -game.bet_amount,
-          description: `🎲 Rejoindre partie ${game.invite_code || 'publique'}`
-        });
-      }
+      // Suppression du prélèvement immédiat - sera fait au lancement réel de la partie (PLAYING)
 
       // Mettre à jour la partie
       const newParticipantIds = [...(game.participant_ids || []), profile.id];

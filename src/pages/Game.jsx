@@ -82,8 +82,7 @@ export default function Game() {
   const winnerTimeoutRef = useRef(null);
   const gameIdRef = useRef(existingGameId);
   const lastSyncRef = useRef(0); // Anti-boucle de sync
-  const hasRefunded = useRef(false); // Sécurité pour éviter double remboursement
-  const initialBetPaid = useRef(location.state?.betTransactionId || false); // Suivre si la mise a été payée
+  const [hasPaid, setHasPaid] = useState(false); // Suivre si la mise a été débitée
 
   const currentPlayer = gameState.players[gameState.currentPlayerIndex];
   // Un tour est humain si le joueur n'est pas une IA ET que son ID correspond à l'utilisateur actuel
@@ -208,6 +207,35 @@ export default function Game() {
     return () => clearInterval(interval);
   }, [gameState.state, existingGameId]);
 
+  // Gestion du prélèvement de la mise au début REEL de la partie
+  useEffect(() => {
+    const handleBetDeduction = async () => {
+      if (gameState.state === 'PLAYING' && bet > 0 && !hasPaid && !isSolo) {
+        try {
+          // Vérification finale du solde avant débit
+          if ((profile?.walletBalance || 0) < bet) {
+            showToast("💰 Solde insuffisant pour démarrer la partie !");
+            setTimeout(() => navigate('/lobby'), 3000);
+            return;
+          }
+
+          await addTransaction({
+            type: 'bet',
+            amount: -bet,
+            description: `🎲 Mise prélevée : Lancement partie ${mode}`
+          });
+          setHasPaid(true);
+          console.log("💰 Mise débitée avec succès au lancement.");
+        } catch (err) {
+          console.error("Erreur prélèvement mise au lancement:", err);
+          showToast("❌ Erreur de prélèvement. Retour au lobby.");
+          navigate('/lobby');
+        }
+      }
+    };
+    handleBetDeduction();
+  }, [gameState.state, bet, hasPaid, isSolo, profile?.walletBalance, addTransaction, mode, navigate]);
+
   // Real-time: Écouter les changements d'état du jeu
   useEffect(() => {
     if (!gameIdRef.current) return;
@@ -236,19 +264,6 @@ export default function Game() {
         table: 'games',
         filter: `id=eq.${gameIdRef.current}` 
       }, (payload) => {
-        // Détection d'annulation par un autre joueur
-        if (payload.new.status === 'finished' && gameState.state === 'WAITING' && bet > 0 && !hasRefunded.current) {
-          hasRefunded.current = true;
-          addTransaction({
-            type: 'refund',
-            amount: Number(bet),
-            description: `🔄 Remboursement : Partie annulée par l'hôte`
-          });
-          showToast("🚪 Partie annulée. Mise remboursée.");
-          setTimeout(() => navigate('/lobby'), 2000);
-          return;
-        }
-
         // On ne synchronise que si l'état est différent (pour éviter les boucles)
         // Et surtout si ce n'est pas nous qui venons de jouer
         const isMyTurn = currentPlayer?.id === user?.id;
@@ -266,29 +281,14 @@ export default function Game() {
     return () => {
       window.removeEventListener('beforeunload', handleUnload);
       
-      // Sécurité : Remboursement automatique si on quitte en salle d'attente
-      const cleanupRefund = async () => {
-        if (gameState.state === 'WAITING' && bet > 0 && !hasRefunded.current && !existingGameId) {
-          hasRefunded.current = true;
-          try {
-            await addTransaction({
-              type: 'refund',
-              amount: Number(bet),
-              description: `🔄 Remboursement auto : Départ salle d'attente`
-            });
-            await supabase.from('games').update({ status: 'finished' }).eq('id', gameIdRef.current);
-          } catch (err) {
-            console.error("Erreur remboursement auto:", err);
-          }
-        } else if (gameState.state === 'WAITING' && !existingGameId) {
-          supabase.from('games').update({ status: 'finished' }).eq('id', gameIdRef.current);
-        }
-      };
+      // Si on quitte alors qu'on est seul en salle d'attente, on ferme la partie
+      if (gameState.state === 'WAITING' && !existingGameId) {
+        supabase.from('games').update({ status: 'finished' }).eq('id', gameIdRef.current);
+      }
       
-      cleanupRefund();
       supabase.removeChannel(channel);
     };
-  }, [gameIdRef.current, gameState, user?.id, currentPlayer?.id, canProcessAI, bet, addTransaction, existingGameId]);
+  }, [gameIdRef.current, gameState, user?.id, currentPlayer?.id, canProcessAI, existingGameId]);
 
   // Chat: Charger les messages initiaux et écouter en temps réel
   useEffect(() => {
@@ -450,17 +450,9 @@ export default function Game() {
   };
 
   const handleCancelWaiting = async () => {
-    if (isEnding || hasRefunded.current) return;
+    if (isEnding) return;
     setIsEnding(true);
     try {
-      if (bet > 0) {
-        hasRefunded.current = true;
-        await addTransaction({
-          type: 'refund',
-          amount: Number(bet),
-          description: `🔄 Remboursement : Annulation partie ${inviteCode || 'publique'}`
-        });
-      }
       if (gameIdRef.current) {
         await supabase.from('games').update({ status: 'finished' }).eq('id', gameIdRef.current);
       }
@@ -816,9 +808,9 @@ export default function Game() {
             </p>
             {bet > 0 && (
               <div className="escrow-badge" style={{ 
-                background: 'rgba(34, 197, 94, 0.1)', 
-                border: '1px solid #22C55E', 
-                color: '#22C55E', 
+                background: 'rgba(245, 158, 11, 0.1)', 
+                border: '1px solid #F59E0B', 
+                color: '#F59E0B', 
                 padding: '8px 16px', 
                 borderRadius: '20px',
                 display: 'inline-flex',
@@ -828,7 +820,7 @@ export default function Game() {
                 fontSize: 'var(--text-sm)',
                 fontWeight: 600
               }}>
-                <span style={{ fontSize: '1.2em' }}>🛡️</span> Mise de {bet.toFixed(2)}€ sécurisée dans le pot
+                <span style={{ fontSize: '1.2em' }}>💰</span> Mise de {bet.toFixed(2)}€ prélevée au lancement
               </div>
             )}
             {inviteCode && (
