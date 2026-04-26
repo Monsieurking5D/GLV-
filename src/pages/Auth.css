@@ -3,11 +3,11 @@
 .auth-page {
   min-height: 100vh;
   display: flex;
-  align-items: center;
+  align-items: flex-start; /* Changé de center à flex-start pour éviter que le haut soit coupé */
   justify-content: center;
-  padding: var(--space-6);
+  padding: 100px var(--space-6) var(--space-10); /* Ajout d'un padding-top de 100px pour la navbar */
   position: relative;
-  overflow: hidden;
+  overflow-y: auto;
 }
 
 .auth-bg {
