@@ -108,9 +108,9 @@ export function getAIMove(gameState, difficulty = 'medium') {
  */
 export function getAIThinkingDelay(difficulty) {
   const delays = {
-    easy: 600,
-    medium: 900,
-    hard: 1200,
+    easy: 1000,
+    medium: 1500,
+    hard: 2000,
   };
   return delays[difficulty] || 900;
 }

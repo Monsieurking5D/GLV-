@@ -273,7 +273,6 @@ export function moveToken(gameState, tokenId) {
     tokens: newTokens,
     scores,
     diceRolled: false,
-    diceValue: null,
     movablePieces: [],
     currentPlayerIndex: nextPlayerIndex,
     consecutiveSixes,
