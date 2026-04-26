@@ -10,17 +10,17 @@ export const COLORS = {
 };
 
 export const COLOR_HEX = {
-  red: '#EF4444',
-  blue: '#3B82F6',
-  green: '#22C55E',
-  yellow: '#F59E0B',
+  red: '#FF3B3B',
+  blue: '#0084FF',
+  green: '#00E676',
+  yellow: '#F5C518', // Golden
 };
 
 export const COLOR_LIGHT_HEX = {
-  red: '#FCA5A5',
-  blue: '#93C5FD',
-  green: '#86EFAC',
-  yellow: '#FCD34D',
+  red: '#FF8A80',
+  blue: '#82B1FF',
+  green: '#B9F6CA',
+  yellow: '#FFE57F',
 };
 
 export const COLOR_HOME = {

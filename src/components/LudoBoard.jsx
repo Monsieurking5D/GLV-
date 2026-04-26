@@ -191,17 +191,31 @@ const LudoBoard = memo(({ gameState, onTokenClick, movablePieces = [] }) => {
             width={6 * CELL}
             height={6 * CELL}
             fill={COLOR_HEX[color]}
+            rx="8"
           />
           {/* Carré blanc intérieur */}
           <rect
-            x={(x + 0.7) * CELL}
-            y={(y + 0.7) * CELL}
-            width={4.6 * CELL}
-            height={4.6 * CELL}
+            x={(x + 0.8) * CELL}
+            y={(y + 0.8) * CELL}
+            width={4.4 * CELL}
+            height={4.4 * CELL}
             fill="#FFFFFF"
-            stroke="rgba(0,0,0,0.05)"
-            strokeWidth="1"
+            rx="4"
           />
+          {/* Cercles de socle pour les pions dans la maison */}
+          {HOME_ZONE_TOKENS[color].map(([c, r], i) => {
+            const { x: cx, y: cy } = cellXY(c, r);
+            return (
+              <circle
+                key={`base-${color}-${i}`}
+                cx={cx}
+                cy={cy}
+                r={CELL * 0.4}
+                fill={COLOR_HEX[color]}
+                opacity="0.15"
+              />
+            );
+          })}
         </g>
       ))}
 
@@ -217,8 +231,8 @@ const LudoBoard = memo(({ gameState, onTokenClick, movablePieces = [] }) => {
               width={CELL}
               height={CELL}
               fill={pathCellFill(col, row)}
-              stroke="rgba(0,0,0,0.55)"
-              strokeWidth="1"
+              stroke="rgba(0,0,0,0.12)"
+              strokeWidth="0.5"
             />
           );
         })
@@ -236,16 +250,16 @@ const LudoBoard = memo(({ gameState, onTokenClick, movablePieces = [] }) => {
         return (
           <path
             key={`star-${idx}`}
-            d={starPath(x, y, CELL * 0.32)}
+            d={starPath(x, y, CELL * 0.35)}
             fill="none"
-            stroke="#1f2937"
-            strokeWidth="1.4"
+            stroke="rgba(0,0,0,0.3)"
+            strokeWidth="1.5"
             strokeLinejoin="round"
           />
         );
       })}
 
-      {/* 5) Flèches d'entrée sur les départs (petite flèche colorée) */}
+      {/* 5) Flèches d'entrée sur les départs */}
       {Object.entries(START_POSITIONS).map(([color]) => {
         const arrows = {
           blue:   { x: 0,        y: 7.5 * CELL, rot: 0,   tx: CELL * 0.55, ty: 0 },
@@ -258,20 +272,20 @@ const LudoBoard = memo(({ gameState, onTokenClick, movablePieces = [] }) => {
         return (
           <g key={`arr-${color}`} transform={`translate(${a.x + a.tx}, ${a.y + a.ty}) rotate(${a.rot})`}>
             <path
-              d={`M -${CELL*0.25} 0 L ${CELL*0.25} -${CELL*0.18} L ${CELL*0.25} ${CELL*0.18} Z`}
+              d={`M -${CELL*0.2} 0 L ${CELL*0.2} -${CELL*0.15} L ${CELL*0.2} ${CELL*0.15} Z`}
               fill={COLOR_HEX[color]}
-              opacity="0.85"
+              opacity="0.6"
             />
           </g>
         );
       })}
 
-      {/* 6) Centre — triangles + étoile */}
+      {/* 6) Centre — triangles */}
       {(() => {
         const cx = 7.5 * CELL;
         const cy = 7.5 * CELL;
         const tri = (color, points) => (
-          <polygon points={points} fill={COLOR_HEX[color]} stroke="rgba(0,0,0,0.4)" strokeWidth="1" />
+          <polygon points={points} fill={COLOR_HEX[color]} stroke="rgba(255,255,255,0.2)" strokeWidth="1" />
         );
         return (
           <g>
@@ -283,7 +297,7 @@ const LudoBoard = memo(({ gameState, onTokenClick, movablePieces = [] }) => {
         );
       })()}
 
-      {/* 7) Pions */}
+      {/* 7) Pions Style "Location Marker" */}
       {tokens && Object.values(tokens).map((arr) =>
         arr.map((token) => {
           const { x: bx, y: by } = getTokenXY(token);
@@ -291,8 +305,7 @@ const LudoBoard = memo(({ gameState, onTokenClick, movablePieces = [] }) => {
           const x = bx + dx;
           const y = by + dy;
           const movable = isMovable(token);
-          const fill = `url(#pin-grad-${token.color})`;
-          const stroke = COLOR_HEX[token.color];
+          const mainColor = COLOR_HEX[token.color];
 
           return (
             <g
@@ -305,39 +318,44 @@ const LudoBoard = memo(({ gameState, onTokenClick, movablePieces = [] }) => {
                 <circle
                   cx={x}
                   cy={y}
-                  r={PIN_R + 5}
+                  r={PIN_R + 8}
                   className="lb-token-ring"
                   fill="none"
-                  stroke={stroke}
-                  strokeWidth="2.5"
+                  stroke={mainColor}
+                  strokeWidth="3"
+                  strokeDasharray="4 2"
                 />
               )}
 
-              {/* Forme "pin" : disque + petite pointe inférieure */}
+              {/* Forme de goutte blanche (Map Pin) */}
               <path
                 d={`
-                  M ${x} ${y - PIN_R}
-                  a ${PIN_R} ${PIN_R} 0 1 0 0.01 0
-                  Z
-                  M ${x - PIN_R * 0.45} ${y + PIN_R * 0.55}
-                  L ${x} ${y + PIN_R * 1.45}
-                  L ${x + PIN_R * 0.45} ${y + PIN_R * 0.55}
+                  M ${x} ${y + PIN_R * 1.2}
+                  L ${x - PIN_R * 0.8} ${y}
+                  A ${PIN_R} ${PIN_R} 0 1 1 ${x + PIN_R * 0.8} ${y}
                   Z
                 `}
-                fill={fill}
-                stroke="#FFFFFF"
-                strokeWidth="2"
-                filter="url(#lb-pin-shadow)"
-              />
-              {/* Trou central blanc */}
-              <circle cx={x} cy={y - PIN_R * 0.05} r={PIN_R * 0.32} fill="#FFFFFF" />
-              {/* Reflet */}
-              <circle
-                cx={x - PIN_R * 0.32}
-                cy={y - PIN_R * 0.45}
-                r={PIN_R * 0.18}
                 fill="#FFFFFF"
-                opacity="0.55"
+                filter="url(#lb-pin-shadow)"
+                stroke="rgba(0,0,0,0.1)"
+                strokeWidth="0.5"
+              />
+              
+              {/* Cercle de couleur intérieur */}
+              <circle 
+                cx={x} 
+                cy={y - PIN_R * 0.2} 
+                r={PIN_R * 0.55} 
+                fill={mainColor} 
+              />
+
+              {/* Reflet sur le cercle intérieur */}
+              <circle 
+                cx={x - PIN_R * 0.2} 
+                cy={y - PIN_R * 0.4} 
+                r={PIN_R * 0.2} 
+                fill="#FFFFFF" 
+                opacity="0.3" 
               />
             </g>
           );
