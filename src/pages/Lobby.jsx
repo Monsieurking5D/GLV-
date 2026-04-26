@@ -1,5 +1,4 @@
-// src/pages/Lobby.jsx
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useTransition } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { supabase } from '../lib/supabase';
@@ -56,6 +55,7 @@ const DIFFICULTIES = [
 export default function Lobby() {
   const { profile, addTransaction, loading, error } = useAuth();
   const navigate = useNavigate();
+  const [isPending, startTransition] = useTransition();
   const [selectedMode, setSelectedMode] = useState('1v1');
   const [selectedBet, setSelectedBet] = useState(10);
   const [selectedDifficulty, setSelectedDifficulty] = useState('medium');
@@ -412,7 +412,7 @@ export default function Lobby() {
                   className={`mode-card 
                     ${selectedMode === mode.id ? 'selected' : ''} 
                     ${!mode.available ? 'disabled' : ''}`}
-                  onClick={() => mode.available && setSelectedMode(mode.id)}
+                  onClick={() => mode.available && startTransition(() => setSelectedMode(mode.id))}
                   id={`mode-${mode.id}`}
                 >
                   <div className="mode-icon">{mode.icon}</div>
@@ -457,7 +457,7 @@ export default function Lobby() {
                     <button
                       key={amount}
                       className={`bet-amount-btn ${selectedBet === amount ? 'selected' : ''} ${balance < amount ? 'insufficient' : ''}`}
-                      onClick={() => setSelectedBet(amount)}
+                      onClick={() => startTransition(() => setSelectedBet(amount))}
                       id={`bet-${amount.toString().replace('.', '-')}`}
                     >
                       {amount.toFixed(2)}€
@@ -500,7 +500,7 @@ export default function Lobby() {
                       key={d.id}
                       className={`difficulty-btn ${selectedDifficulty === d.id ? 'selected' : ''}`}
                       style={{ '--diff-color': d.color }}
-                      onClick={() => setSelectedDifficulty(d.id)}
+                      onClick={() => startTransition(() => setSelectedDifficulty(d.id))}
                       id={`diff-${d.id}`}
                     >
                       {d.icon} {d.label}
