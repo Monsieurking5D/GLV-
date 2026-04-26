@@ -367,16 +367,11 @@ export default function Lobby() {
           </div>
           <div className="lobby-header-right">
             <div className="balance-card">
-              <div className="balance-icon">💰</div>
-              <div style={{ position: 'relative' }}>
-                <span className="balance-label">Solde</span>
-                <span className="balance-amount">{balance.toFixed(2)}€</span>
-                {profile?.bonusBalance > 0 && (
-                  <div className="bonus-badge-mini" title={`Wagering: ${profile.wageringRequirement.toFixed(2)}€ restants`}>
-                    🎁 {profile.bonusBalance.toFixed(0)}€ bloqués
-                  </div>
-                )}
-              </div>
+              {profile?.bonusBalance > 0 && (
+                <div className="bonus-badge-mini" title={`Wagering: ${profile.wageringRequirement.toFixed(2)}€ restants`}>
+                  🎁 {profile.bonusBalance.toFixed(0)}€ bloqués
+                </div>
+              )}
               <button
                 className="btn btn-gold btn-sm"
                 onClick={() => setShowDepositModal(true)}
@@ -396,7 +391,6 @@ export default function Lobby() {
             { label: 'Parties jouées', value: stats.played, icon: '🎮' },
             { label: 'Victoires', value: stats.won, icon: '🏆' },
             { label: 'Taux de victoire', value: `${stats.winRate}%`, icon: '📈' },
-            { label: 'Solde', value: `${balance.toFixed(0)}€`, icon: '💰', gold: true },
           ].map((s, i) => (
             <div className="stat-card" key={i}>
               <span className="stat-icon">{s.icon}</span>
