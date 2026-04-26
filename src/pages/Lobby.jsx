@@ -194,7 +194,9 @@ export default function Lobby() {
           difficulty: selectedDifficulty,
           isPrivate,
           inviteCode: code,
-          participantIds: [profile.id]
+          participantIds: [profile.id],
+          maxPlayers: currentMode.players,
+          isSolo: isSoloMode
         }
       });
     } catch (err) {
@@ -240,11 +242,20 @@ export default function Lobby() {
         };
       }
 
+      // Vérifier si la partie est maintenant pleine pour changer l'état
+      const isFull = newParticipantIds.length >= (game.max_players || 2);
+      const newState = { ...game.state };
+      if (isFull) {
+        newState.state = 'PLAYING';
+        newState.players = updatedPlayers;
+      }
+
       await supabase
         .from('games')
         .update({ 
           participant_ids: newParticipantIds,
-          players: updatedPlayers
+          players: updatedPlayers,
+          state: newState
         })
         .eq('id', game.id);
 
@@ -259,7 +270,8 @@ export default function Lobby() {
           isPrivate: game.is_private,
           inviteCode: game.invite_code,
           gameId: game.id,
-          participantIds: newParticipantIds
+          participantIds: newParticipantIds,
+          isSolo: false
         } 
       });
     } catch (err) {
@@ -547,7 +559,29 @@ export default function Lobby() {
 
           {/* Center — Public Games */}
           <div className="lobby-center">
-             <div className="lobby-section-title">🌍 Parties publiques en cours</div>
+             <div className="lobby-section-title" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+               🌍 Parties publiques
+               <button 
+                className="btn-refresh" 
+                onClick={() => window.location.reload()}
+                title="Actualiser les parties"
+                style={{
+                  background: 'var(--bg-glass)',
+                  border: '1px solid var(--border-glass)',
+                  borderRadius: '50%',
+                  width: '32px',
+                  height: '32px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  fontSize: '16px',
+                  transition: 'all 0.3s ease'
+                }}
+               >
+                 🔄
+               </button>
+             </div>
              <div className="public-games-list">
                {loadingGames ? (
                  <div className="games-empty">Chargement des parties...</div>
@@ -559,7 +593,7 @@ export default function Lobby() {
                ) : (
                  publicGames.map(game => {
                    const participantsCount = game.participant_ids?.length || 1;
-                   const isFull = participantsCount >= (game.players?.length || 2);
+                   const isFull = participantsCount >= (game.max_players || 2);
                    return (
                      <div key={game.id} className={`game-item-card ${isFull ? 'full' : ''}`}>
                        <div className="game-item-info">
@@ -568,7 +602,7 @@ export default function Lobby() {
                            <span className="game-item-bet">{game.bet_amount.toFixed(2)}€</span>
                          </div>
                          <div className="game-item-details">
-                           👤 {participantsCount}/{(game.players?.length || 2)} joueurs
+                           👤 {participantsCount}/{game.max_players || 2} joueurs
                          </div>
                        </div>
                        <button 

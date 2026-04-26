@@ -664,6 +664,32 @@ export default function Game() {
         </div>
       )}
 
+      {/* Waiting Overlay */}
+      {gameState.state === 'WAITING' && (
+        <div className="modal-overlay" style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)', zIndex: 2000 }}>
+          <div className="winner-modal animate-bounce-in" style={{ textAlign: 'center', padding: 'var(--space-10)' }}>
+            <div className="spinner" style={{ width: 60, height: 60, margin: '0 auto var(--space-6)' }} />
+            <h2 className="text-gradient-gold">Salle d'attente</h2>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: 'var(--space-6)' }}>
+              En attente de joueurs... La partie commencera dès que l'adversaire aura rejoint.
+            </p>
+            {inviteCode && (
+              <div className="join-code-display" style={{ background: 'var(--bg-glass)', padding: 'var(--space-4)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-glass)' }}>
+                <p style={{ fontSize: 'var(--text-xs)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>
+                  Code d'invitation
+                </p>
+                <p style={{ fontSize: 'var(--text-2xl)', fontWeight: 800, letterSpacing: '0.1em', color: 'var(--gold-primary)' }}>
+                  {inviteCode}
+                </p>
+              </div>
+            )}
+            <button className="btn btn-ghost" onClick={() => navigate('/lobby')} style={{ marginTop: 'var(--space-8)' }}>
+              Annuler et quitter
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Quit confirm */}
       {showQuitConfirm && (
         <div className="modal-overlay" onClick={() => setShowQuitConfirm(false)}>

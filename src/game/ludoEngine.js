@@ -28,7 +28,7 @@ export const GAME_STATE = {
 // Init
 // =====================
 
-export function createInitialGameState(players, betAmount = 0) {
+export function createInitialGameState(players, betAmount = 0, isSolo = false) {
   const tokens = {};
   const scores = {};
 
@@ -43,8 +43,11 @@ export function createInitialGameState(players, betAmount = 0) {
     scores[player.color] = 0;
   });
 
+  // Si c'est solo, on commence direct. Sinon on attend que les participants humains soient là.
+  const initialState = isSolo ? GAME_STATE.PLAYING : GAME_STATE.WAITING;
+
   return {
-    state: GAME_STATE.PLAYING,
+    state: initialState,
     players,
     currentPlayerIndex: 0,
     tokens,
