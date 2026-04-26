@@ -412,11 +412,6 @@ export default function Auth() {
     <div className="auth-page">
       <AuthBackground />
       <div className="auth-container">
-        <button className="auth-logo" onClick={() => navigate('/')} aria-label="Retour à l'accueil">
-          <span className="auth-logo-icon">🎲</span>
-          <span className="auth-logo-text">Golden<span>Ludo</span></span>
-        </button>
-
         {emailSent ? (
           <VerificationScreen email={sentEmailAddress} onBack={() => navigate('/auth?mode=login')} />
         ) : mode === 'update-password' ? (
