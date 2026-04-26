@@ -36,7 +36,8 @@ export default function Game() {
     inviteCode = null,
     players: initialPlayers = [],
     gameId: existingGameId = null,
-    participantIds: initialParticipantIds = []
+    participantIds: initialParticipantIds = [],
+    isSolo = false
   } = location.state || {};
 
   // Build players list
@@ -60,7 +61,7 @@ export default function Game() {
   });
   
   const [gameState, setGameState] = useState(() =>
-    createInitialGameState(players, bet)
+    createInitialGameState(players, bet, isSolo)
   );
   
   const [diceRolling, setDiceRolling] = useState(false);
