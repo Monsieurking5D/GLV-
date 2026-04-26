@@ -93,9 +93,7 @@ export default function Game() {
   const [showQuitConfirm, setShowQuitConfirm] = useState(false);
   const [isEnding, setIsEnding] = useState(false);
   const [toast, setToast] = useState(null);
-  const [activeTab, setActiveTab] = useState('game'); // 'game', 'players', 'chat'
-  const [messages, setMessages] = useState([]);
-  const [newMessage, setNewMessage] = useState('');
+  const [activeTab, setActiveTab] = useState('log'); // 'log'
   const [lastDiceValue, setLastDiceValue] = useState(null);
   
   const logRef = useRef(null);
@@ -180,6 +178,29 @@ export default function Game() {
       }
     };
     initGame();
+  }, [user?.id]);
+
+  // Real-time: Synchronisation de l'état (pour le multi)
+  useEffect(() => {
+    if (!gameIdRef.current) return;
+
+    const gameChannel = supabase
+      .channel(`game_sync_${gameIdRef.current}`)
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'games',
+        filter: `id=eq.${gameIdRef.current}`
+      }, (payload) => {
+        if (payload.new.last_updated_by !== user?.id) {
+          setGameState(payload.new.state);
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(gameChannel);
+    };
   }, [user?.id]);
 
   // Persistence: Mettre à jour la partie à chaque changement d'état
@@ -692,36 +713,18 @@ export default function Game() {
             </div>
 
             <div className="tab-content">
-              {activeTab === 'log' ? (
-                <div className="game-log" ref={logRef}>
-                  {displayLog.length === 0 ? (
-                    <div className="log-empty">La partie commence...</div>
-                  ) : (
-                    displayLog.map((entry, i) => (
-                      <div key={i} className="log-entry">
-                        <span className="log-time">{new Date(entry.time).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
-                        <span className="log-text">{entry.text}</span>
-                      </div>
-                    ))
-                  )}
-                </div>
-              ) : (
-                <div className="chat-container">
-                  <div className="chat-messages">
-                    {messages.length === 0 ? <div className="log-empty">Pas encore de messages.</div> : messages.map((msg, i) => (
-                      <div key={msg.id || i} className={`chat-bubble ${msg.user_id === user?.id ? 'mine' : ''}`}>
-                        <div className="chat-author">{msg.username}</div>
-                        <div className="chat-content">{msg.content}</div>
-                      </div>
-                    ))}
-                    <div ref={chatEndRef} />
-                  </div>
-                  <form className="chat-input-form" onSubmit={handleSendMessage}>
-                    <input type="text" placeholder="Votre message..." className="input chat-input" value={newMessage} onChange={(e) => setNewMessage(e.target.value)} />
-                    <button type="submit" className="chat-send-btn">✈️</button>
-                  </form>
-                </div>
-              )}
+              <div className="game-log" ref={logRef}>
+                {displayLog.length === 0 ? (
+                  <div className="log-empty">La partie commence...</div>
+                ) : (
+                  displayLog.map((entry, i) => (
+                    <div key={i} className="log-entry">
+                      <span className="log-time">{new Date(entry.time).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
+                      <span className="log-text">{entry.text}</span>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
 
             <div className="score-section">
@@ -741,20 +744,10 @@ export default function Game() {
         )}
       </div>
 
-      {/* Mobile Tab Bar + Integrated Dice (Mockup Optimized) */}
+      {/* Mobile Dice Navigation Bar (Simplified) */}
       {isMobile && (
-        <div className="mobile-tab-bar">
-          <button className={`mtb-item ${activeTab === 'game' ? 'active' : ''}`} onClick={() => setActiveTab('game')}>
-            <span className="mtb-icon">🔲</span>
-            <span className="mtb-label">Jeu</span>
-          </button>
-          
-          <button className={`mtb-item ${activeTab === 'players' ? 'active' : ''}`} onClick={() => setActiveTab('players')}>
-            <span className="mtb-icon">👥</span>
-            <span className="mtb-label">Joueurs</span>
-          </button>
-
-          {/* Integrated Mini-Dice */}
+        <div className="mobile-tab-bar" style={{ justifyContent: 'center' }}>
+          {/* Centered Integrated Mini-Dice */}
           <div className={`mtb-dice-container ${isHumanTurn && !gameState.diceRolled ? 'can-roll' : ''}`}>
             <Dice
               value={gameState.diceValue || lastDiceValue}
@@ -766,12 +759,6 @@ export default function Game() {
             />
             {isHumanTurn && !gameState.diceRolled && <div className="dice-ping" />}
           </div>
-
-          <button className={`mtb-item ${activeTab === 'chat' ? 'active' : ''}`} onClick={() => setActiveTab('chat')}>
-            <span className="mtb-icon">💬</span>
-            <span className="mtb-label">Chat</span>
-            {messages.length > 0 && <span className="mtb-badge">1</span>}
-          </button>
         </div>
       )}
 
