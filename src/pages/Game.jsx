@@ -72,6 +72,7 @@ export default function Game() {
   const urlGameId = queryParams.get('id');
 
   // Build players list
+  const buildPlayers = useCallback(() => {
     const human = { id: user.id, name: profile?.username || 'Vous', color: 'red', isAI: false };
     if (mode === 'solo') {
       return [human, makeAIPlayer('green', 'Mario', difficulty)];
