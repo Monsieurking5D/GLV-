@@ -366,20 +366,13 @@ export default function Lobby() {
             <h1 className="lobby-title">Tableau de bord</h1>
           </div>
           <div className="lobby-header-right">
-            <div className="balance-card">
-              {profile?.bonusBalance > 0 && (
-                <div className="bonus-badge-mini" title={`Wagering: ${profile.wageringRequirement.toFixed(2)}€ restants`}>
+            {profile?.bonusBalance > 0 && (
+              <div className="balance-card" style={{ border: '1px solid var(--gold-primary)', background: 'rgba(245,197,24,0.05)' }}>
+                <div className="bonus-badge-mini" style={{ position: 'static' }}>
                   🎁 {profile.bonusBalance.toFixed(0)}€ bloqués
                 </div>
-              )}
-              <button
-                className="btn btn-gold btn-sm"
-                onClick={() => setShowDepositModal(true)}
-                id="deposit-btn"
-              >
-                + Dépôt
-              </button>
-            </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -398,6 +391,12 @@ export default function Lobby() {
               <span className="stat-label">{s.label}</span>
             </div>
           ))}
+
+          <button className="stat-card deposit-card-btn" onClick={() => setShowDepositModal(true)} id="deposit-btn-card">
+            <span className="stat-icon">💰</span>
+            <span className="stat-value gold">+ Dépôt</span>
+            <span className="stat-label">Recharger mon solde</span>
+          </button>
         </div>
 
         <div className="lobby-columns">

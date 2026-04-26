@@ -116,6 +116,19 @@
   text-align: center;
 }
 
+.deposit-card-btn {
+  cursor: pointer;
+  border: 1px solid var(--gold-primary) !important;
+  background: rgba(245, 197, 24, 0.05) !important;
+  font-family: inherit;
+}
+
+.deposit-card-btn:hover {
+  background: rgba(245, 197, 24, 0.1) !important;
+  border-color: var(--gold-primary) !important;
+  box-shadow: 0 8px 32px rgba(245, 197, 24, 0.15);
+}
+
 /* Lobby columns */
 .lobby-columns {
   display: grid;
