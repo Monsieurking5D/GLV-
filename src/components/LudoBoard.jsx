@@ -1,8 +1,4 @@
-// src/components/LudoBoard.jsx
-// Plateau de jeu Ludo classique — SVG 15x15 (style coloré clair)
-// API conservée: { gameState, onTokenClick, movablePieces }
-
-import { memo } from 'react';
+import React, { memo, useState, useEffect, useRef } from 'react';
 import {
   MAIN_PATH_COORDS,
   HOME_STRETCH_COORDS,
@@ -17,7 +13,6 @@ import './LudoBoard.css';
 const S = 600;          // taille interne du SVG (viewBox)
 const N = 15;           // grille 15x15
 const CELL = S / N;
-const PIN_R = CELL * 0.34;
 
 // --- Helpers --------------------------------------------------------------
 
@@ -36,14 +31,6 @@ function starPath(cx, cy, rOuter, rInner = rOuter * 0.45) {
   return `M${points.join(' L')} Z`;
 }
 
-// Couleur de la zone d'accueil pour chaque coin (correspond au layout du moteur)
-const HOME_QUADRANTS = [
-  { color: 'red',    x: 0, y: 9 },  // bas-gauche
-  { color: 'green',  x: 9, y: 0 },  // haut-droite
-  { color: 'blue',   x: 0, y: 0 },  // haut-gauche  (selon HOME_ZONE_TOKENS yellow→haut-gauche; on suit le moteur)
-  { color: 'yellow', x: 9, y: 9 },  // bas-droite
-];
-
 // On lit HOME_ZONE_TOKENS pour mapper la couleur au coin réellement utilisé
 function quadrantsFromConfig() {
   return Object.entries(HOME_ZONE_TOKENS).map(([color, tokens]) => {
@@ -56,14 +43,11 @@ function quadrantsFromConfig() {
 
 // Couleur de fond d'une cellule du chemin (couloirs finaux + cases de départ)
 function pathCellFill(col, row) {
-  // Couloirs finaux (ligne col=7 verticale, row=7 horizontale)
   if (col === 7 && row >= 1 && row <= 6) return COLOR_HEX.green;
   if (col === 7 && row >= 8 && row <= 13) return COLOR_HEX.red;
   if (row === 7 && col >= 1 && col <= 6) return COLOR_HEX.blue;
   if (row === 7 && col >= 8 && col <= 13) return COLOR_HEX.yellow;
 
-  // Cases de départ colorées (juste devant chaque maison)
-  // RED start = MAIN_PATH_COORDS[0] = (6,13) ; GREEN = (8,1) ; BLUE = (1,6) ; YELLOW = (13,8)
   const startCol = (color) => {
     const [c, r] = MAIN_PATH_COORDS[START_POSITIONS[color]];
     return c === col && r === row;
@@ -76,21 +60,86 @@ function pathCellFill(col, row) {
   return '#FFFFFF';
 }
 
-// Une cellule appartient-elle au chemin (croix blanche) ?
 function isPathCell(col, row) {
   const inVerticalArm = (col >= 6 && col <= 8) && (row < 6 || row > 8);
   const inHorizontalArm = (row >= 6 && row <= 8) && (col < 6 || col > 8);
   return inVerticalArm || inHorizontalArm;
 }
 
-// --- Composant ------------------------------------------------------------
+// --- Sous-Composant Token pour l'animation ---------------------------------
+
+const Token = memo(({ token, bx, by, tokens, movable, onTokenClick, getStackOffset }) => {
+  const [isAnimating, setIsAnimating] = useState(false);
+  const prevPos = useRef({ bx, by });
+  const mainColor = COLOR_HEX[token.color];
+  const pinR = CELL * 0.38;
+
+  const { dx, dy } = getStackOffset(token, tokens);
+  const x = bx + dx;
+  const y = by + dy;
+
+  // Déclencher l'animation de saut si la position change
+  useEffect(() => {
+    if (prevPos.current.bx !== bx || prevPos.current.by !== by) {
+      setIsAnimating(true);
+      const timer = setTimeout(() => setIsAnimating(false), 450);
+      prevPos.current = { bx, by };
+      return () => clearTimeout(timer);
+    }
+  }, [bx, by]);
+
+  return (
+    <g
+      className={`lb-token ${movable ? 'lb-token--movable' : ''} ${isAnimating ? 'lb-token--moving' : ''}`}
+      onClick={() => movable && onTokenClick && onTokenClick(token.id)}
+      style={{ 
+        cursor: movable ? 'pointer' : 'default',
+        transform: `translate(${x}px, ${y}px)` 
+      }}
+    >
+      {movable && (
+        <circle
+          cx={0}
+          cy={0}
+          r={pinR + 8}
+          className="lb-token-ring"
+          fill="none"
+          stroke={mainColor}
+          strokeWidth="3"
+          strokeDasharray="4 2"
+        />
+      )}
+
+      <path
+        d={`
+          M 0 ${pinR * 0.65}
+          L ${-pinR * 0.85} ${-pinR * 0.15}
+          A ${pinR} ${pinR} 0 1 1 ${pinR * 0.85} ${-pinR * 0.15}
+          Z
+        `}
+        fill="#FFFFFF"
+        filter="url(#lb-pin-shadow)"
+        stroke="rgba(0,0,0,0.08)"
+        strokeWidth="0.5"
+      />
+      
+      <circle cx={0} cy={-pinR * 0.25} r={pinR * 0.58} fill={mainColor} />
+      <circle cx={-pinR * 0.25} cy={-pinR * 0.45} r={pinR * 0.18} fill="#FFFFFF" opacity="0.35" />
+    </g>
+  );
+});
+
+// --- Composant Principal --------------------------------------------------
 
 const LudoBoard = memo(({ gameState, onTokenClick, movablePieces = [] }) => {
   if (!gameState) return null;
 
-  const { tokens, players, currentPlayerIndex } = gameState;
-  const currentColor = players?.[currentPlayerIndex]?.color;
+  const { tokens } = gameState;
   const quadrants = quadrantsFromConfig();
+
+  const isMovable = (token) => {
+    return movablePieces.some(p => p.color === token.color && p.id === token.id);
+  };
 
   function getTokenXY(token) {
     if (token.state === TOKEN_STATE.HOME) {
@@ -99,167 +148,73 @@ const LudoBoard = memo(({ gameState, onTokenClick, movablePieces = [] }) => {
       return cellXY(c, r);
     }
     if (token.state === TOKEN_STATE.FINISHED) {
-      // On place les pions dans leur triangle respectif au centre
-      const offset = CELL * 0.6;
-      const spread = [[-0.12, -0.12], [0.12, -0.12], [-0.12, 0.12], [0.12, 0.12]];
-      const [sx, sy] = spread[token.id] || [0, 0];
-      
-      let bx = S / 2;
-      let by = S / 2;
-
-      if (token.color === 'red')    by += offset;
-      if (token.color === 'green')  by -= offset;
-      if (token.color === 'blue')   bx -= offset;
-      if (token.color === 'yellow') bx += offset;
-
-      return { x: bx + sx * CELL, y: by + sy * CELL };
+      return cellXY(7, 7);
     }
-    if (token.homeStretchPos >= 0) {
-      const coords = HOME_STRETCH_COORDS[token.color];
-      const [c, r] = coords[token.homeStretchPos] || [7, 7];
+    if (token.state === TOKEN_STATE.MOVING || token.state === TOKEN_STATE.ON_PATH) {
+      const [c, r] = MAIN_PATH_COORDS[token.position] || [7, 7];
       return cellXY(c, r);
     }
-    const [c, r] = MAIN_PATH_COORDS[token.position] || [0, 0];
-    return cellXY(c, r);
+    if (token.state === TOKEN_STATE.HOME_STRETCH) {
+      const [c, r] = HOME_STRETCH_COORDS[token.color][token.position] || [7, 7];
+      return cellXY(c, r);
+    }
+    return cellXY(7, 7);
   }
 
-  // Détecter empilement: si plusieurs pions sur même cellule, on les disperse
   function getStackOffset(token, allTokens) {
-    if (token.state !== TOKEN_STATE.ACTIVE || token.homeStretchPos >= 0) return { dx: 0, dy: 0 };
-    const sameCell = [];
-    Object.values(allTokens).forEach((arr) => {
-      arr.forEach((t) => {
-        if (
-          t.state === TOKEN_STATE.ACTIVE &&
-          t.homeStretchPos < 0 &&
-          t.position === token.position
-        ) {
-          sameCell.push(`${t.color}-${t.id}`);
-        }
-      });
-    });
-    if (sameCell.length <= 1) return { dx: 0, dy: 0 };
-    const idx = sameCell.indexOf(`${token.color}-${token.id}`);
-    const angle = (Math.PI * 2 * idx) / sameCell.length;
-    const r = CELL * 0.18;
+    const samePos = Object.values(allTokens).flat().filter(t => 
+      t.state === token.state && 
+      (t.state !== TOKEN_STATE.ON_PATH || t.position === token.position) &&
+      (t.state !== TOKEN_STATE.HOME_STRETCH || (t.position === token.position && t.color === token.color)) &&
+      t.state !== TOKEN_STATE.HOME &&
+      t.state !== TOKEN_STATE.FINISHED
+    );
+
+    if (samePos.length <= 1) return { dx: 0, dy: 0 };
+    const idx = samePos.findIndex(t => t.id === token.id && t.color === token.color);
+    const angle = (idx / samePos.length) * Math.PI * 2;
+    const r = CELL * 0.22;
     return { dx: Math.cos(angle) * r, dy: Math.sin(angle) * r };
   }
 
-  const isMovable = (token) =>
-    token.color === currentColor && movablePieces.includes(token.id);
-
   return (
-    <svg
-      viewBox={`0 0 ${S} ${S}`}
-      width="100%"
-      height="100%"
-      className="ludo-board-svg"
-      role="img"
-      aria-label="Plateau de Ludo"
-    >
+    <svg viewBox={`0 0 ${S} ${S}`} className="ludo-board-svg" xmlns="http://www.w3.org/2000/svg">
       <defs>
-        <filter id="lb-shadow" x="-30%" y="-30%" width="160%" height="160%">
-          <feDropShadow dx="0" dy="2" stdDeviation="2" floodColor="rgba(0,0,0,0.35)" />
-        </filter>
         <filter id="lb-pin-shadow" x="-50%" y="-50%" width="200%" height="200%">
-          <feDropShadow dx="0" dy="3" stdDeviation="2.5" floodColor="rgba(0,0,0,0.45)" />
+          <feGaussianBlur in="SourceAlpha" stdDeviation="2" />
+          <feOffset dx="1" dy="2" result="offsetblur" />
+          <feComponentTransfer><feFuncA type="linear" slope="0.3" /></feComponentTransfer>
+          <feMerge><feMergeNode /><feMergeNode in="SourceGraphic" /></feMerge>
         </filter>
-        {Object.entries(COLOR_HEX).map(([c, hex]) => (
-          <radialGradient
-            key={`grad-${c}`}
-            id={`pin-grad-${c}`}
-            cx="35%"
-            cy="35%"
-            r="65%"
-          >
-            <stop offset="0%" stopColor="#ffffff" stopOpacity="0.85" />
-            <stop offset="35%" stopColor={hex} stopOpacity="1" />
-            <stop offset="100%" stopColor={hex} stopOpacity="1" />
-          </radialGradient>
-        ))}
       </defs>
 
-      {/* 1) Fond global */}
       <rect width={S} height={S} fill="#FFFFFF" />
 
-      {/* 2) Quadrants colorés (zones d'accueil) */}
       {quadrants.map(({ color, x, y }) => (
         <g key={`q-${color}`}>
-          <rect
-            x={x * CELL}
-            y={y * CELL}
-            width={6 * CELL}
-            height={6 * CELL}
-            fill={COLOR_HEX[color]}
-            rx="4"
-          />
-          {/* Carré blanc intérieur */}
-          <rect
-            x={(x + 0.8) * CELL}
-            y={(y + 0.8) * CELL}
-            width={4.4 * CELL}
-            height={4.4 * CELL}
-            fill="#FFFFFF"
-            rx="4"
-          />
-          {/* Cercles de socle pour les pions dans la maison */}
+          <rect x={x * CELL} y={y * CELL} width={6 * CELL} height={6 * CELL} fill={COLOR_HEX[color]} rx="4" />
+          <rect x={(x + 0.8) * CELL} y={(y + 0.8) * CELL} width={4.4 * CELL} height={4.4 * CELL} fill="#FFFFFF" rx="4" />
           {HOME_ZONE_TOKENS[color].map(([c, r], i) => {
             const { x: cx, y: cy } = cellXY(c, r);
-            return (
-              <circle
-                key={`base-${color}-${i}`}
-                cx={cx}
-                cy={cy}
-                r={CELL * 0.42}
-                fill={COLOR_HEX[color]}
-                opacity="0.22"
-              />
-            );
+            return <circle key={`base-${color}-${i}`} cx={cx} cy={cy} r={CELL * 0.42} fill={COLOR_HEX[color]} opacity="0.22" />;
           })}
         </g>
       ))}
 
-      {/* 3) Grille du chemin (croix blanche + couloirs colorés) */}
       {Array.from({ length: N }).map((_, row) =>
         Array.from({ length: N }).map((_, col) => {
           if (!isPathCell(col, row)) return null;
-          return (
-            <rect
-              key={`p-${col}-${row}`}
-              x={col * CELL}
-              y={row * CELL}
-              width={CELL}
-              height={CELL}
-              fill={pathCellFill(col, row)}
-              stroke="rgba(0,0,0,0.15)"
-              strokeWidth="0.5"
-            />
-          );
+          return <rect key={`p-${col}-${row}`} x={col * CELL} y={row * CELL} width={CELL} height={CELL} fill={pathCellFill(col, row)} stroke="rgba(0,0,0,0.15)" strokeWidth="0.5" />;
         })
       )}
 
-      {/* 4) Étoiles sur cases sûres */}
       {[...SAFE_CELLS].map((idx) => {
         const [c, r] = MAIN_PATH_COORDS[idx] || [];
-        if (c == null) return null;
-        
-        // Ne pas afficher d'étoile sur les cases de départ colorées
-        if (Object.values(START_POSITIONS).includes(idx)) return null;
-
+        if (c == null || Object.values(START_POSITIONS).includes(idx)) return null;
         const { x, y } = cellXY(c, r);
-        return (
-          <path
-            key={`star-${idx}`}
-            d={starPath(x, y, CELL * 0.35)}
-            fill="none"
-            stroke="rgba(0,0,0,0.25)"
-            strokeWidth="1.2"
-            strokeLinejoin="round"
-          />
-        );
+        return <path key={`star-${idx}`} d={starPath(x, y, CELL * 0.35)} fill="none" stroke="rgba(0,0,0,0.25)" strokeWidth="1.2" strokeLinejoin="round" />;
       })}
 
-      {/* 5) Flèches d'entrée sur les départs */}
       {Object.entries(START_POSITIONS).map(([color]) => {
         const arrows = {
           blue:   { x: 0,        y: 7.5 * CELL, rot: 0,   tx: CELL * 0.55, ty: 0 },
@@ -271,23 +226,16 @@ const LudoBoard = memo(({ gameState, onTokenClick, movablePieces = [] }) => {
         if (!a) return null;
         return (
           <g key={`arr-${color}`} transform={`translate(${a.x + a.tx}, ${a.y + a.ty}) rotate(${a.rot})`}>
-            <path
-              d={`M -${CELL*0.2} 0 L ${CELL*0.2} -${CELL*0.15} L ${CELL*0.2} ${CELL*0.15} Z`}
-              fill={COLOR_HEX[color]}
-              opacity="0.4"
-            />
+            <path d={`M -${CELL*0.2} 0 L ${CELL*0.2} -${CELL*0.15} L ${CELL*0.2} ${CELL*0.15} Z`} fill={COLOR_HEX[color]} opacity="0.4" />
           </g>
         );
       })}
 
-      {/* 6) Centre — triangles (avec léger overlap pour éviter les lignes blanches) */}
       {(() => {
         const cx = 7.5 * CELL;
         const cy = 7.5 * CELL;
-        const offset = 0.5; // léger overlap au centre
-        const tri = (color, points) => (
-          <polygon points={points} fill={COLOR_HEX[color]} stroke={COLOR_HEX[color]} strokeWidth="0.5" />
-        );
+        const offset = 0.5;
+        const tri = (color, points) => <polygon points={points} fill={COLOR_HEX[color]} stroke={COLOR_HEX[color]} strokeWidth="0.5" />;
         return (
           <g>
             {tri('green',  `${6*CELL},${6*CELL} ${9*CELL},${6*CELL} ${cx},${cy + offset}`)}
@@ -298,83 +246,24 @@ const LudoBoard = memo(({ gameState, onTokenClick, movablePieces = [] }) => {
         );
       })()}
 
-      {/* 7) Pions Style "Location Marker" épuré */}
       {tokens && Object.values(tokens).map((arr) =>
         arr.map((token) => {
           const { x: bx, y: by } = getTokenXY(token);
-          const { dx, dy } = getStackOffset(token, tokens);
-          const x = bx + dx;
-          const y = by + dy;
-          const movable = isMovable(token);
-          const mainColor = COLOR_HEX[token.color];
-          const pinR = CELL * 0.38;
-
           return (
-            <g
+            <Token 
               key={`tok-${token.color}-${token.id}`}
-              className={`lb-token ${movable ? 'lb-token--movable' : ''}`}
-              onClick={() => movable && onTokenClick && onTokenClick(token.id)}
-              style={{ cursor: movable ? 'pointer' : 'default' }}
-            >
-              {movable && (
-                <circle
-                  cx={x}
-                  cy={y}
-                  r={pinR + 8}
-                  className="lb-token-ring"
-                  fill="none"
-                  stroke={mainColor}
-                  strokeWidth="3"
-                  strokeDasharray="4 2"
-                />
-              )}
-
-              {/* Forme de goutte blanche (Map Pin) mieux centrée */}
-              <path
-                d={`
-                  M ${x} ${y + pinR * 0.65}
-                  L ${x - pinR * 0.85} ${y - pinR * 0.15}
-                  A ${pinR} ${pinR} 0 1 1 ${x + pinR * 0.85} ${y - pinR * 0.15}
-                  Z
-                `}
-                fill="#FFFFFF"
-                filter="url(#lb-pin-shadow)"
-                stroke="rgba(0,0,0,0.08)"
-                strokeWidth="0.5"
-              />
-              
-              {/* Cercle de couleur intérieur — mieux aligné avec le centre (x, y) */}
-              <circle 
-                cx={x} 
-                cy={y - pinR * 0.25} 
-                r={pinR * 0.58} 
-                fill={mainColor} 
-              />
-
-              {/* Reflet sur le cercle intérieur */}
-              <circle 
-                cx={x - pinR * 0.25} 
-                cy={y - pinR * 0.45} 
-                r={pinR * 0.18} 
-                fill="#FFFFFF" 
-                opacity="0.35" 
-              />
-            </g>
+              token={token}
+              bx={bx}
+              by={by}
+              tokens={tokens}
+              movable={isMovable(token)}
+              onTokenClick={onTokenClick}
+              getStackOffset={getStackOffset}
+            />
           );
         })
       )}
-
-      {/* 8) Bordure extérieure dorée */}
-      <rect
-        x="1.5"
-        y="1.5"
-        width={S - 3}
-        height={S - 3}
-        fill="none"
-        stroke="#F5C518"
-        strokeWidth="3"
-        rx="6"
-      />
+      <rect x="1.5" y="1.5" width={S - 3} height={S - 3} fill="none" stroke="#F5C518" strokeWidth="3" rx="6" />
     </svg>
   );
 });
