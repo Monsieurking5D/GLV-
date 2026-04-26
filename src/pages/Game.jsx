@@ -610,16 +610,6 @@ export default function Game() {
             })}
           </div>
 
-          {/* Current player indicator */}
-          <div
-            className="turn-indicator"
-            style={{ '--player-color': COLOR_HEX[currentPlayer?.color] }}
-          >
-            <div className="turn-dot" />
-            <span>
-              {isHumanTurn ? '🎯 Votre tour' : `🤖 ${currentPlayer?.name} joue...`}
-            </span>
-          </div>
 
   return (
     <div className="game-page">
