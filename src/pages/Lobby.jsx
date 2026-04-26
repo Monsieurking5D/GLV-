@@ -209,13 +209,14 @@ export default function Lobby() {
         state: {
           mode: selectedMode,
           bet: isSoloMode ? 0 : selectedBet,
-          players: initialPlayers,
+          players: initialPlayers.map(p => ({ ...p, bet_paid: !isSoloMode && p.id === profile.id })),
           difficulty: selectedDifficulty,
           isPrivate,
           inviteCode: code,
           participantIds: [profile.id],
           maxPlayers: currentMode.players,
-          isSolo: isSoloMode
+          isSolo: isSoloMode,
+          betTransactionId: !isSoloMode ? true : false // Flag to indicate bet was paid
         }
       });
     } catch (err) {
@@ -257,7 +258,8 @@ export default function Lobby() {
           id: profile.id,
           name: profile.username,
           color: updatedPlayers[aiIndex].color,
-          isAI: false
+          isAI: false,
+          bet_paid: game.bet_amount > 0
         };
       }
 
