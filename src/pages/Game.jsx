@@ -681,27 +681,6 @@ export default function Game() {
               movablePieces={isHumanTurn ? gameState.movablePieces : []}
             />
           </div>
-          
-          {/* Mobile Dice Section (Mockup) */}
-          {isMobile && (
-            <div className="mobile-dice-section animate-slide-up">
-              <div className="mds-card">
-                <Dice
-                  value={gameState.diceValue || lastDiceValue}
-                  rolling={diceRolling}
-                  onRoll={() => handleRollDice(false)}
-                  disabled={gameState.diceRolled || !isHumanTurn || gameState.state === 'WAITING'}
-                  currentColor={COLOR_HEX[currentPlayer?.color]}
-                  playerName={currentPlayer?.name}
-                />
-                <div className="mds-hint" onClick={() => !gameState.diceRolled && isHumanTurn && handleRollDice(false)}>
-                  {gameState.diceRolled 
-                    ? (gameState.movablePieces.length > 0 ? "CHOISISSEZ UN PION" : "PAS DE MOUVEMENT") 
-                    : "CLIQUEZ POUR LANCER"}
-                </div>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Right panel — Desktop only */}
@@ -762,21 +741,41 @@ export default function Game() {
         )}
       </div>
 
-      {/* Mobile Tab Bar (Mockup) */}
+      {/* Mobile Tab Bar + Integrated Dice (Mockup Optimized) */}
       {isMobile && (
         <div className="mobile-tab-bar">
           <button className={`mtb-item ${activeTab === 'game' ? 'active' : ''}`} onClick={() => setActiveTab('game')}>
             <span className="mtb-icon">🔲</span>
+            <span className="mtb-label">Jeu</span>
           </button>
+          
           <button className={`mtb-item ${activeTab === 'players' ? 'active' : ''}`} onClick={() => setActiveTab('players')}>
             <span className="mtb-icon">👥</span>
+            <span className="mtb-label">Joueurs</span>
           </button>
+
+          {/* Integrated Mini-Dice */}
+          <div className={`mtb-dice-container ${isHumanTurn && !gameState.diceRolled ? 'can-roll' : ''}`}>
+            <Dice
+              value={gameState.diceValue || lastDiceValue}
+              rolling={diceRolling}
+              onRoll={() => handleRollDice(false)}
+              disabled={gameState.diceRolled || !isHumanTurn || gameState.state === 'WAITING'}
+              currentColor={COLOR_HEX[currentPlayer?.color]}
+              playerName={currentPlayer?.name}
+            />
+            {isHumanTurn && !gameState.diceRolled && <div className="dice-ping" />}
+          </div>
+
           <button className={`mtb-item ${activeTab === 'chat' ? 'active' : ''}`} onClick={() => setActiveTab('chat')}>
             <span className="mtb-icon">💬</span>
+            <span className="mtb-label">Chat</span>
             {messages.length > 0 && <span className="mtb-badge">1</span>}
           </button>
+          
           <button className={`mtb-item ${activeTab === 'leaderboard' ? 'active' : ''}`} onClick={() => navigate('/leaderboard')}>
             <span className="mtb-icon">🏆</span>
+            <span className="mtb-label">Classement</span>
           </button>
         </div>
       )}
