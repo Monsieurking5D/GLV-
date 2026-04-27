@@ -96,10 +96,6 @@ export default function Navbar() {
   return (
     <nav className="navbar">
       <div className="navbar-inner">
-        <button className={`hamburger ${menuOpen ? 'open' : ''}`} onClick={() => setMenuOpen(!menuOpen)}>
-          <span /><span /><span />
-        </button>
-
         <div className="navbar-logo" onClick={() => handleNavigate(isAuthenticated ? '/lobby' : '/')} role="button" tabIndex={0}>
           <div className="logo-icon">
             <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -143,6 +139,10 @@ export default function Navbar() {
           ) : (
             <AuthButtons handleNavigate={handleNavigate} />
           )}
+
+          <button className={`hamburger ${menuOpen ? 'open' : ''}`} onClick={() => setMenuOpen(!menuOpen)}>
+            <span /><span /><span />
+          </button>
         </div>
       </div>
 
