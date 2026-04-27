@@ -332,10 +332,6 @@ export function processDiceRoll(gameState, diceValue) {
   return newState;
 }
 
-  // Si un seul pion mouvable → auto-select (optionnel, ici on laisse le joueur choisir)
-  return newState;
-}
-
 /**
  * Auto-sélection si un seul pion peut bouger
  */
