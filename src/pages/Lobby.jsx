@@ -461,63 +461,149 @@ export default function Lobby() {
               </div>
             </div>
 
-            {/* Bet amounts (si pas solo) */}
-            {!isSoloMode && (
-              <div className="bet-config">
-                <div className="lobby-section-title">💰 Configuration de la mise</div>
-                
-                <div className="private-toggle-card" onClick={() => setIsPrivate(!isPrivate)}>
-                   <div className="private-info">
-                     <span className="private-label">Partie Privée</span>
-                     <span className="private-desc">Générez un code pour inviter vos amis</span>
-                   </div>
-                   <div className={`toggle-switch ${isPrivate ? 'on' : ''}`}>
-                     <div className="toggle-handle" />
-                   </div>
+            {/* Center — Public Games (Moved to Left) */}
+            <div className="lobby-section-title" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'var(--space-4)'}}>
+              🌍 Parties publiques
+              <button 
+               className={`btn-refresh ${loadingGames ? 'rotating' : ''}`} 
+               onClick={fetchPublicGames}
+               title="Actualiser les parties"
+               disabled={loadingGames}
+               style={{
+                 background: 'var(--bg-glass)',
+                 border: '1px solid var(--border-glass)',
+                 borderRadius: '50%',
+                 width: '32px',
+                 height: '32px',
+                 display: 'flex',
+                 alignItems: 'center',
+                 justifyContent: 'center',
+                 cursor: 'pointer',
+                 fontSize: '16px',
+                 transition: 'all 0.3s ease',
+                 opacity: loadingGames ? 0.6 : 1
+               }}
+              >
+                🔄
+              </button>
+            </div>
+            <div className="public-games-list" style={{ minHeight: 'auto' }}>
+              {loadingGames ? (
+                <div className="games-empty" style={{ padding: 'var(--space-6)' }}>Chargement des parties...</div>
+              ) : publicGames.length === 0 ? (
+                <div className="games-empty" style={{ padding: 'var(--space-6)' }}>
+                  <span>🎲</span>
+                  <p>Aucune partie publique disponible.</p>
                 </div>
-
-                <div className="bet-amounts">
-                  {BET_AMOUNTS.map(amount => (
-                    <button
-                      key={amount}
-                      className={`bet-amount-btn ${selectedBet === amount ? 'selected' : ''} ${balance < amount ? 'insufficient' : ''}`}
-                      onClick={() => startTransition(() => setSelectedBet(amount))}
-                      id={`bet-${amount.toString().replace('.', '-')}`}
-                    >
-                      {amount.toFixed(2)}€
-                      {balance < amount && <span className="insufficient-icon">⚠</span>}
-                    </button>
-                  ))}
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                  {publicGames.slice(0, 3).map(game => {
+                    const participantsCount = game.participant_ids?.length || 1;
+                    const isFull = participantsCount >= (game.max_players || 2);
+                    return (
+                      <div key={game.id} className={`game-item-card ${isFull ? 'full' : ''}`} style={{ padding: 'var(--space-2) var(--space-3)' }}>
+                        <div className="game-item-info">
+                          <div className="game-item-main" style={{ gap: 'var(--space-2)' }}>
+                            <span className="game-item-mode" style={{ fontSize: 'var(--text-xs)' }}>{game.mode === '1v1' ? 'Duel' : game.mode}</span>
+                            <span className="game-item-bet" style={{ fontSize: 'var(--text-sm)' }}>{game.bet_amount.toFixed(2)}€</span>
+                          </div>
+                        </div>
+                        <button 
+                          className="btn btn-gold btn-xs" 
+                          disabled={isFull || isStarting}
+                          onClick={() => handleJoinGame(game)}
+                          style={{ padding: '4px 8px', fontSize: '10px' }}
+                        >
+                          {isFull ? 'Pleine' : 'Rejoindre'}
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
+              )}
+            </div>
+          </div>
 
-                 {selectedBet && (
-                  <div className="bet-summary">
-                    <div className="bet-summary-row">
-                      <span>Votre mise</span>
-                      <span className="bet-summary-value">{selectedBet.toFixed(2)}€</span>
+          {/* Center — Bet Config (Moved from Left) */}
+          <div className="lobby-center">
+            <div className="lobby-section-title">⚙️ Configuration de la partie</div>
+            
+            {!isSoloMode ? (
+              <>
+                <div className="bet-config">
+                  <div className="private-toggle-card" onClick={() => setIsPrivate(!isPrivate)}>
+                    <div className="private-info">
+                      <span className="private-label">Partie Privée</span>
+                      <span className="private-desc">Générez un code pour inviter vos amis</span>
                     </div>
-                    <div className="bet-summary-row">
-                      <span>Pot total (2 joueurs)</span>
-                      <span className="bet-summary-value">{(selectedBet * 2).toFixed(2)}€</span>
-                    </div>
-                    <div className="bet-summary-row highlight">
-                      <span>Gains potentiels</span>
-                      <span className="bet-summary-value gold">
-                        {((selectedBet * 2) - Math.min(selectedBet * 2 * 0.10, 3.00)).toFixed(2)}€
-                      </span>
-                    </div>
-                    <div className="bet-summary-note">
-                      Commission : 10% (Plafonnée à 3€ max)
+                    <div className={`toggle-switch ${isPrivate ? 'on' : ''}`}>
+                      <div className="toggle-handle" />
                     </div>
                   </div>
-                )}
-              </div>
-            )}
 
-            {/* Difficulty (IA) */}
-            {isSoloMode && (
+                  <div className="bet-amounts">
+                    {BET_AMOUNTS.map(amount => (
+                      <button
+                        key={amount}
+                        className={`bet-amount-btn ${selectedBet === amount ? 'selected' : ''} ${balance < amount ? 'insufficient' : ''}`}
+                        onClick={() => startTransition(() => setSelectedBet(amount))}
+                        id={`bet-${amount.toString().replace('.', '-')}`}
+                      >
+                        {amount.toFixed(2)}€
+                        {balance < amount && <span className="insufficient-icon">⚠</span>}
+                      </button>
+                    ))}
+                  </div>
+
+                  {selectedBet && (
+                    <div className="bet-summary">
+                      <div className="bet-summary-row">
+                        <span>Votre mise</span>
+                        <span className="bet-summary-value">{selectedBet.toFixed(2)}€</span>
+                      </div>
+                      <div className="bet-summary-row">
+                        <span>Pot total ({currentMode.players} joueurs)</span>
+                        <span className="bet-summary-value">{(selectedBet * currentMode.players).toFixed(2)}€</span>
+                      </div>
+                      <div className="bet-summary-row highlight">
+                        <span>Gains potentiels</span>
+                        <span className="bet-summary-value gold">
+                          {((selectedBet * currentMode.players) - Math.min(selectedBet * currentMode.players * 0.10, 3.00)).toFixed(2)}€
+                        </span>
+                      </div>
+                      <div className="bet-summary-note">
+                        Commission : 10% (Plafonnée à 3€ max)
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {!canBet && (
+                  <p className="insufficient-warning" style={{ marginTop: 'var(--space-2)' }}>
+                    ⚠️ Solde insuffisant. Déposez des fonds pour jouer.
+                  </p>
+                )}
+
+                <div className="join-private-section">
+                  <div className="divider-text">OU REJOINDRE PAR CODE</div>
+                  <div className="join-private-card">
+                    <input 
+                      type="text" 
+                      placeholder="Code d'invitation" 
+                      className="input"
+                      value={joinCode}
+                      onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+                      maxLength={6}
+                    />
+                    <button className="btn btn-gold" onClick={handleJoinPrivate}>
+                      Rejoindre
+                    </button>
+                  </div>
+                </div>
+              </>
+            ) : (
               <div className="bet-config">
-                <div className="lobby-section-title">🤖 Niveau de l'IA</div>
+                <div className="lobby-section-title" style={{fontSize: 'var(--text-sm)'}}>🤖 Niveau de l'IA</div>
                 <div className="difficulty-buttons">
                   {DIFFICULTIES.map(d => (
                     <button
@@ -525,105 +611,18 @@ export default function Lobby() {
                       className={`difficulty-btn ${selectedDifficulty === d.id ? 'selected' : ''}`}
                       style={{ '--diff-color': d.color }}
                       onClick={() => startTransition(() => setSelectedDifficulty(d.id))}
-                      id={`diff-${d.id}`}
                     >
                       {d.icon} {d.label}
                     </button>
                   ))}
                 </div>
-              </div>
-            )}
-
-            {!isSoloMode && !canBet && (
-              <p className="insufficient-warning">
-                ⚠️ Solde insuffisant. Déposez des fonds pour jouer avec cette mise.
-              </p>
-            )}
-
-            {/* Join private */}
-            {!isSoloMode && (
-              <div className="join-private-section">
-                <div className="divider-text">OU</div>
-                <div className="join-private-card">
-                  <input 
-                    type="text" 
-                    placeholder="Code d'invitation" 
-                    className="input"
-                    value={joinCode}
-                    onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-                    maxLength={6}
-                  />
-                  <button className="btn btn-ghost" onClick={handleJoinPrivate}>
-                    Rejoindre
-                  </button>
-                </div>
+                <p style={{ marginTop: 'var(--space-4)', fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>
+                  En mode Solo, aucune mise n'est requise. C'est le mode idéal pour s'entraîner !
+                </p>
               </div>
             )}
           </div>
 
-          {/* Center — Public Games */}
-          <div className="lobby-center">
-             <div className="lobby-section-title" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-               🌍 Parties publiques
-               <button 
-                className={`btn-refresh ${loadingGames ? 'rotating' : ''}`} 
-                onClick={fetchPublicGames}
-                title="Actualiser les parties"
-                disabled={loadingGames}
-                style={{
-                  background: 'var(--bg-glass)',
-                  border: '1px solid var(--border-glass)',
-                  borderRadius: '50%',
-                  width: '32px',
-                  height: '32px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  fontSize: '16px',
-                  transition: 'all 0.3s ease',
-                  opacity: loadingGames ? 0.6 : 1
-                }}
-               >
-                 🔄
-               </button>
-             </div>
-             <div className="public-games-list">
-               {loadingGames ? (
-                 <div className="games-empty">Chargement des parties...</div>
-               ) : publicGames.length === 0 ? (
-                 <div className="games-empty">
-                   <span>🎲</span>
-                   <p>Aucune partie publique disponible. Créez-en une !</p>
-                 </div>
-               ) : (
-                 publicGames.map(game => {
-                   const participantsCount = game.participant_ids?.length || 1;
-                   const isFull = participantsCount >= (game.max_players || 2);
-                   return (
-                     <div key={game.id} className={`game-item-card ${isFull ? 'full' : ''}`}>
-                       <div className="game-item-info">
-                         <div className="game-item-main">
-                           <span className="game-item-mode">{game.mode === '1v1' ? 'Duel' : game.mode}</span>
-                           <span className="game-item-bet">{game.bet_amount.toFixed(2)}€</span>
-                         </div>
-                         <div className="game-item-details">
-                           👤 {participantsCount}/{game.max_players || 2} joueurs
-                         </div>
-                       </div>
-                       <button 
-                         className="btn btn-gold btn-sm" 
-                         disabled={isFull || isStarting}
-                         onClick={() => handleJoinGame(game)}
-                       >
-                         {isFull ? 'Pleine' : 'Rejoindre'}
-                       </button>
-                     </div>
-                   );
-                 })
-               )}
-             </div>
-          </div>
 
           {/* Right — Transactions */}
           <div className="lobby-right">
