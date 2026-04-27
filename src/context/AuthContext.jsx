@@ -65,36 +65,41 @@ export function AuthProvider({ children }) {
   };
 
   useEffect(() => {
-    // 0. Vérification de la version pour forcer la déconnexion après un push
-    const checkVersion = async () => {
+    // 1. Initialisation
+    const init = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      const storedVersion = localStorage.getItem('app_version');
+
+      // Détection de version pour le futur
+      let currentVersion = 'dev';
       try {
         const response = await fetch('/version.json?t=' + Date.now());
         if (response.ok) {
           const data = await response.json();
-          const currentVersion = data.version;
-          const storedVersion = localStorage.getItem('app_version');
-          
-          if (storedVersion && storedVersion !== currentVersion && currentVersion !== 'dev') {
-            console.log("🚀 Nouvelle version détectée, déconnexion forcée...");
-            localStorage.setItem('app_version', currentVersion);
-            await supabase.auth.signOut();
-            window.location.href = '/auth?mode=login&reason=update';
-            return true;
-          }
-          localStorage.setItem('app_version', currentVersion);
+          currentVersion = data.version;
         }
-      } catch (err) {
-        console.warn("Échec du check de version:", err);
+      } catch (e) {
+        console.warn("Version check failed", e);
       }
-      return false;
-    };
 
-    // 1. Initialisation
-    const init = async () => {
-      const isOutdated = await checkVersion();
-      if (isOutdated) return;
+      // CAS 1 : Session existante mais AUCUN système de version (Transition maintenant)
+      // CAS 2 : Version différente détectée (Futurs pushs)
+      const isNewSystem = session && !storedVersion;
+      const isOutdated = storedVersion && storedVersion !== currentVersion && currentVersion !== 'dev';
 
-      const { data: { session } } = await supabase.auth.getSession();
+      if (isNewSystem || isOutdated) {
+        console.log(isNewSystem ? "🆕 Initialisation du système de version..." : "🚀 Mise à jour détectée...");
+        localStorage.setItem('app_version', currentVersion);
+        if (session) {
+          await supabase.auth.signOut();
+          window.location.href = '/auth?mode=login&reason=update';
+          return;
+        }
+      }
+
+      // On enregistre la version actuelle si elle manque
+      if (!storedVersion) localStorage.setItem('app_version', currentVersion);
+
       setUser(session?.user || null);
       if (session?.user) {
         fetchProfile(session.user.id).catch(() => {});
