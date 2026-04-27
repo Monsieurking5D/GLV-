@@ -147,26 +147,29 @@ export default function Navbar() {
       </div>
 
       {menuOpen && (
-        <div className="mobile-menu">
-          {isAuthenticated ? (
-            <>
-              <div className="mobile-menu-header">
-                <strong>{profile?.username}</strong>
-                <span>{profile?.email || user?.email}</span>
-              </div>
-              <button className="mobile-nav-link" onClick={() => handleNavigate('/lobby')}>🎮 Jouer</button>
-              <button className="mobile-nav-link" onClick={() => handleNavigate('/profile')}>👤 Mon Profil</button>
-              <button className="mobile-nav-link" onClick={() => handleNavigate('/stats')}>📊 Statistiques</button>
-              <div className="dropdown-divider" style={{margin: '8px 16px', opacity: 0.5}} />
-              <button className="mobile-nav-link danger" onClick={async () => { await signOut(); handleNavigate('/'); }}>🚪 Déconnexion</button>
-            </>
-          ) : (
-            <>
-              <button className="mobile-nav-link" onClick={() => handleNavigate('/auth?mode=login')}>Connexion</button>
-              <button className="mobile-nav-link" onClick={() => handleNavigate('/auth?mode=register')}>S'inscrire</button>
-            </>
-          )}
-        </div>
+        <>
+          <div className="mobile-menu-overlay" onClick={() => setMenuOpen(false)} />
+          <div className="mobile-menu">
+            {isAuthenticated ? (
+              <>
+                <div className="mobile-menu-header">
+                  <strong>{profile?.username}</strong>
+                  <span>{profile?.email || user?.email}</span>
+                </div>
+                <button className="mobile-nav-link" onClick={() => handleNavigate('/lobby')}>🎮 Jouer</button>
+                <button className="mobile-nav-link" onClick={() => handleNavigate('/profile')}>👤 Mon Profil</button>
+                <button className="mobile-nav-link" onClick={() => handleNavigate('/stats')}>📊 Statistiques</button>
+                <div className="dropdown-divider" style={{margin: '8px 16px', opacity: 0.5}} />
+                <button className="mobile-nav-link danger" onClick={async () => { await signOut(); handleNavigate('/'); }}>🚪 Déconnexion</button>
+              </>
+            ) : (
+              <>
+                <button className="mobile-nav-link" onClick={() => handleNavigate('/auth?mode=login')}>Connexion</button>
+                <button className="mobile-nav-link" onClick={() => handleNavigate('/auth?mode=register')}>S'inscrire</button>
+              </>
+            )}
+          </div>
+        </>
       )}
     </nav>
   );

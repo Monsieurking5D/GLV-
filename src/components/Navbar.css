@@ -309,6 +309,9 @@
   flex-direction: column;
   padding: var(--space-4) 0;
   border-top: 1px solid var(--border-subtle);
+  position: relative;
+  z-index: 100;
+  background: rgba(7, 7, 26, 0.98);
 }
 
 .mobile-nav-link {
@@ -328,10 +331,18 @@
 .mobile-nav-link:hover { color: var(--gold-primary); background: rgba(245,197,24,0.06); }
 .mobile-nav-link.danger { color: #EF4444; }
 
-.nav-overlay {
+.nav-overlay,
+.mobile-menu-overlay {
   position: fixed;
   inset: 0;
   z-index: 99;
+}
+
+.mobile-menu-overlay {
+  top: 72px; /* Starts below navbar */
+  background: rgba(7, 7, 26, 0.4);
+  backdrop-filter: blur(4px);
+  animation: fade-in 0.3s ease;
 }
 
 .mobile-menu-header {
