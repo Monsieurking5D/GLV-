@@ -248,7 +248,7 @@ const LudoBoard = memo(({ gameState, onTokenClick, movablePieces = [] }) => {
 
       {tokens && Object.values(tokens).map((arr) => {
         // Ne rendre les pions que si le joueur correspondant existe (id non null)
-        const player = gameState.players.find(p => p.color === arr[0].color);
+        const player = gameState?.players?.find(p => p.color === arr[0]?.color);
         if (!player || !player.id) return null;
 
         return arr.map((token) => {

@@ -112,7 +112,7 @@ export default function Game() {
   const lastSyncRef = useRef(0); // Anti-boucle de sync
   const [hasPaid, setHasPaid] = useState(false); // Suivre si la mise a été débitée
 
-  const currentPlayer = gameState.players[gameState.currentPlayerIndex];
+  const currentPlayer = gameState?.players?.[gameState?.currentPlayerIndex];
   // Un tour est humain si le joueur n'est pas une IA ET que son ID correspond à l'utilisateur actuel
   const isHumanTurn = !currentPlayer?.isAI && currentPlayer?.id === user?.id;
   // Seul le créateur de la partie gère les IA pour éviter les conflits
@@ -609,8 +609,8 @@ export default function Game() {
       {isMobile && currentPlayer && (
         <div className="mobile-game-header animate-fade-in">
           <div className="mgh-turn">
-            <div className="mgh-avatar" style={{ '--p-color': COLOR_HEX[currentPlayer.color] || '#ccc' }}>
-              <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${currentPlayer.name || 'Player'}`} alt="Avatar" />
+            <div className="mgh-avatar" style={{ '--p-color': COLOR_HEX[currentPlayer?.color] || '#ccc' }}>
+              <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${currentPlayer?.name || 'Player'}`} alt="Avatar" />
             </div>
             <div className="mgh-turn-info">
               <span className="mgh-turn-label">{isHumanTurn ? "C'EST VOTRE TOUR," : "TOUR DE"}</span>
@@ -619,8 +619,8 @@ export default function Game() {
             </div>
           </div>
           <div className="mgh-scores">
-            {gameState.players.map(player => {
-              const finished = gameState.tokens[player.color]?.filter(t => t.state === 'FINISHED').length || 0;
+            {gameState?.players?.map(player => {
+              const finished = gameState?.tokens?.[player.color]?.filter(t => t.state === 'FINISHED').length || 0;
               return (
                 <div key={player.id} className="mgh-score-row">
                   <div className="mgh-score-dot" style={{ backgroundColor: COLOR_HEX[player.color] }} />
@@ -642,10 +642,10 @@ export default function Game() {
           <div className="game-left-panel">
             <div className="log-header">👥 Joueurs</div>
             <div className="players-list">
-              {gameState.players.map((player, idx) => {
+              {gameState?.players?.map((player, idx) => {
                 const isEmpty = !player.id;
-                const isActive = gameState.currentPlayerIndex === idx;
-                const finished = gameState.tokens[player.color]?.filter(t => t.state === 'FINISHED').length || 0;
+                const isActive = gameState?.currentPlayerIndex === idx;
+                const finished = gameState?.tokens?.[player.color]?.filter(t => t.state === 'FINISHED').length || 0;
                 
                 return (
                   <div
@@ -747,10 +747,10 @@ export default function Game() {
 
             <div className="score-section">
               <div className="log-header">📊 Progression</div>
-              {gameState.players.map(player => {
-                const finished = gameState.tokens[player.color]?.filter(t => t.state === 'FINISHED').length || 0;
+              {gameState?.players?.map(player => {
+                const finished = gameState?.tokens?.[player.color]?.filter(t => t.state === 'FINISHED').length || 0;
                 return (
-                  <div key={player.id} className="score-row" style={{ '--player-color': COLOR_HEX[player.color] }}>
+                  <div key={player.id} className="score-row" style={{ '--player-color': COLOR_HEX[player.color] || '#ccc' }}>
                     <span className="score-name">{player.name}</span>
                     <div className="score-bar"><div className="score-fill" style={{ width: `${(finished / 4) * 100}%` }} /></div>
                     <span className="score-pions">{finished}/4</span>
