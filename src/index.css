@@ -475,6 +475,8 @@ a { text-decoration: none; color: inherit; }
   width: 100%;
   box-shadow: var(--shadow-gold), var(--shadow-card);
   animation: bounce-in 0.4s cubic-bezier(0.68,-0.55,0.27,1.55) forwards;
+  max-height: 90vh;
+  overflow-y: auto;
 }
 
 /* --- Notifications toast --- */
@@ -532,6 +534,15 @@ a { text-decoration: none; color: inherit; }
 
   h1 { font-size: 2rem; }
   h2 { font-size: 1.625rem; }
+
+  .modal-overlay { padding: var(--space-3); align-items: flex-end; }
+  .modal-content {
+    border-radius: var(--radius-lg);
+    padding: var(--space-5);
+    max-height: 85vh;
+    border-bottom-left-radius: var(--radius-md);
+    border-bottom-right-radius: var(--radius-md);
+  }
 }
 
 /* --- Accessibility --- */

@@ -154,6 +154,8 @@
   max-width: 500px !important;
   padding: 0 !important;
   overflow: hidden;
+  max-height: 90vh;
+  overflow-y: auto;
 }
 
 .modal-header {
@@ -193,7 +195,7 @@
 .modes-grid-popup {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: var(--space-3);
+  gap: var(--space-2);
 }
 
 .mode-card-popup {
@@ -245,6 +247,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
+  justify-content: flex-start;
 }
 
 .bet-summary-popup {
@@ -500,9 +503,9 @@
   background: var(--bg-glass);
   border: 2px solid var(--border-subtle);
   border-radius: var(--radius-full);
-  padding: var(--space-2) var(--space-5);
+  padding: var(--space-2) var(--space-4);
   font-family: 'Outfit', sans-serif;
-  font-size: var(--text-base);
+  font-size: var(--text-sm);
   font-weight: 700;
   color: var(--text-secondary);
   cursor: pointer;
@@ -511,6 +514,8 @@
   display: flex;
   align-items: center;
   gap: 4px;
+  min-width: 0;
+  white-space: nowrap;
 }
 
 .bet-amount-btn:hover {
@@ -883,9 +888,30 @@
 }
 
 @media (max-width: 600px) {
-  .stats-row { grid-template-columns: repeat(2, 1fr); }
+  .lobby-body { padding: var(--space-3); }
+  .stats-row { grid-template-columns: repeat(2, 1fr); gap: var(--space-2); }
+  .stat-card { padding: var(--space-3); }
+  .stat-value { font-size: var(--text-xl); }
   .difficulty-buttons { flex-direction: column; }
   .lobby-header-inner { flex-direction: column; align-items: flex-start; }
+
+  /* Modal mobile fixes */
+  .config-modal { max-height: 85vh; border-radius: var(--radius-lg) !important; }
+  .modes-grid-popup { grid-template-columns: repeat(2, 1fr); gap: var(--space-2); }
+  .mode-card-popup { padding: var(--space-2); }
+  .mode-card-popup .mode-icon { width: 28px; height: 28px; font-size: 1rem; }
+  .mode-card-popup .mode-name { font-size: var(--text-xs); }
+  .mode-card-popup .mode-multiplier { font-size: 10px; }
+  .bet-amounts-popup { gap: var(--space-1); }
+  .bet-amount-btn { padding: var(--space-2) var(--space-3); font-size: var(--text-xs); }
+  .config-section { padding: var(--space-3) var(--space-4); }
+  .modal-header { padding: var(--space-4); }
+  .modal-footer { padding: var(--space-3) var(--space-4); }
+  .start-btn { height: 50px !important; font-size: var(--text-base) !important; }
+
+  /* Join private card mobile */
+  .join-private-card { flex-direction: column; }
+  .join-private-card .btn { width: 100%; }
 }
 
 .bonus-badge-mini {
