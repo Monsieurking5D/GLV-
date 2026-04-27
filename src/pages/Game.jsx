@@ -801,7 +801,7 @@ export default function Game() {
                 <div className="winner-emoji">😔</div>
                 <h2>Partie terminée</h2>
                 <p style={{ marginBottom: 'var(--space-4)', fontSize: 'var(--text-lg)' }}>
-                  <span style={{ color: COLOR_HEX[gameState.winner] }}>{gameState.players.find(p => p.color === gameState.winner)?.name}</span> a remporté la victoire !
+                  <span style={{ color: COLOR_HEX[gameState.winner] }}>{gameState?.players?.find(p => p.color === gameState.winner)?.name}</span> a remporté la victoire !
                 </p>
                 {bet > 0 && <p style={{ color: '#FCA5A5', fontSize: 'var(--text-base)' }}>Mise perdue : {bet}€</p>}
               </>
