@@ -437,6 +437,30 @@ export default function Lobby() {
               ))}
             </div>
 
+            {/* Stats (Moved here for better visibility) */}
+            <div className="stats-grid-compact">
+              {[
+                { label: 'Parties', value: stats.played, icon: '🎮' },
+                { label: 'Victoires', value: stats.won, icon: '🏆' },
+                { label: 'Win Rate', value: `${stats.winRate}%`, icon: '📈' },
+              ].map((s, i) => (
+                <div className="stat-card-mini" key={i}>
+                  <span className="stat-icon-mini">{s.icon}</span>
+                  <div className="stat-info-mini">
+                    <span className="stat-value-mini">{s.value}</span>
+                    <span className="stat-label-mini">{s.label}</span>
+                  </div>
+                </div>
+              ))}
+              <div className="stat-card-mini deposit-mini" onClick={() => setShowDepositModal(true)}>
+                <span className="stat-icon-mini">💰</span>
+                <div className="stat-info-mini">
+                  <span className="stat-value-mini gold">Portefeuille</span>
+                  <span className="stat-label-mini">{balance.toFixed(2)}€</span>
+                </div>
+              </div>
+            </div>
+
             {/* Bet amounts (si pas solo) */}
             {!isSoloMode && (
               <div className="bet-config">
@@ -666,26 +690,6 @@ export default function Lobby() {
           </div>
         </div>
 
-        {/* Stats (Moved to bottom) */}
-        <div className="stats-row">
-          {[
-            { label: 'Parties jouées', value: stats.played, icon: '🎮' },
-            { label: 'Victoires', value: stats.won, icon: '🏆' },
-            { label: 'Taux de victoire', value: `${stats.winRate}%`, icon: '📈' },
-          ].map((s, i) => (
-            <div className="stat-card" key={i}>
-              <span className="stat-icon">{s.icon}</span>
-              <span className={`stat-value ${s.gold ? 'gold' : ''}`}>{s.value}</span>
-              <span className="stat-label">{s.label}</span>
-            </div>
-          ))}
-
-          <button className="stat-card deposit-card-btn" onClick={() => setShowDepositModal(true)} id="deposit-btn-card">
-            <span className="stat-icon">💰</span>
-            <span className="stat-value gold">+ Dépôt</span>
-            <span className="stat-label">Recharger mon solde</span>
-          </button>
-        </div>
       </div>
 
       {/* Deposit Modal */}
