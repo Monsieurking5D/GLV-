@@ -75,13 +75,15 @@ export default function Lobby() {
   const fetchPublicGames = useCallback(async () => {
     setLoadingGames(true);
     try {
+      // On récupère les parties actives créées dans les 10 dernières minutes
+      // (Plus fiable que 2 minutes si le heartbeat a des délais)
       const { data } = await supabase
         .from('games')
         .select('*')
         .eq('is_private', false)
         .eq('status', 'active')
         .neq('mode', 'solo')
-        .gt('updated_at', new Date(Date.now() - 2 * 60 * 1000).toISOString())
+        .gt('updated_at', new Date(Date.now() - 10 * 60 * 1000).toISOString())
         .order('created_at', { ascending: false });
       
       if (data) setPublicGames(data);
@@ -263,7 +265,9 @@ export default function Lobby() {
         .update({ 
           participant_ids: newParticipantIds,
           players: updatedPlayers,
-          state: newState
+          state: newState,
+          last_updated_by: profile.id,
+          updated_at: new Date().toISOString()
         })
         .eq('id', game.id);
 

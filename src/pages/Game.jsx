@@ -103,10 +103,10 @@ export default function Game() {
   const [isEnding, setIsEnding] = useState(false);
   const [toast, setToast] = useState(null);
   const [lastDiceValue, setLastDiceValue] = useState(null);
+  const [gameId, setGameId] = useState(existingGameId);
   
   const aiTimeoutRef = useRef(null);
   const winnerTimeoutRef = useRef(null);
-  const gameIdRef = useRef(existingGameId);
   const lastSyncRef = useRef(0); // Anti-boucle de sync
   const [hasPaid, setHasPaid] = useState(false); // Suivre si la mise a été débitée
 
@@ -114,7 +114,7 @@ export default function Game() {
   // Un tour est humain si le joueur n'est pas une IA ET que son ID correspond à l'utilisateur actuel
   const isHumanTurn = !currentPlayer?.isAI && currentPlayer?.id === user?.id;
   // Seul le créateur de la partie gère les IA pour éviter les conflits
-  const canProcessAI = !existingGameId; 
+  const canProcessAI = !gameId || (gameState.players && gameState.players[0].id === user?.id); 
   
   const showToast = (msg) => {
     setToast(msg);
@@ -127,7 +127,7 @@ export default function Game() {
       if (!user) return;
 
       // 1. Tenter de restaurer via l'URL si le state est perdu (ex: refresh)
-      if (urlGameId && !existingGameId) {
+      if (urlGameId && !gameId) {
         try {
           const { data, error } = await supabase
             .from('games')
@@ -136,9 +136,8 @@ export default function Game() {
             .single();
           
           if (data && data.status === 'active') {
-            gameIdRef.current = data.id;
+            setGameId(data.id);
             setGameState(data.state);
-            // On ne return pas, on laisse le flux continuer si besoin
             return;
           }
         } catch (err) {
@@ -147,10 +146,9 @@ export default function Game() {
       }
 
       // 2. Si on a déjà un gameId (venant du Lobby), on ne fait rien de plus
-      if (existingGameId) {
-        // S'assurer que l'URL contient l'ID pour les prochains refresh
+      if (gameId) {
         if (!urlGameId) {
-          window.history.replaceState(null, '', `/game?id=${existingGameId}`);
+          window.history.replaceState(null, '', `/game?id=${gameId}`);
         }
         return;
       }
@@ -173,14 +171,14 @@ export default function Game() {
             is_private: isPrivate,
             invite_code: inviteCode,
             last_updated_by: user.id,
-            participant_ids: initialParticipantIds.length > 0 ? initialParticipantIds : [user.id]
+            participant_ids: initialParticipantIds.length > 0 ? initialParticipantIds : [user.id],
+            max_players: initialPlayers.length > 0 ? initialPlayers.length : buildPlayers().length
           }])
           .select()
           .single();
         
         if (data) {
-          gameIdRef.current = data.id;
-          // Mettre à jour l'URL pour permettre le refresh
+          setGameId(data.id);
           window.history.replaceState(null, '', `/game?id=${data.id}`);
         }
         if (error) console.error("Erreur init game:", error);
@@ -189,22 +187,23 @@ export default function Game() {
       }
     };
     initGame();
-  }, [user?.id]);
+  }, [user?.id, gameId]);
 
   // Real-time: Synchronisation de l'état (pour le multi)
   useEffect(() => {
-    if (!gameIdRef.current || !user?.id) return;
+    if (!gameId || !user?.id) return;
 
     const gameChannel = supabase
-      .channel(`game_sync_${gameIdRef.current}`)
+      .channel(`game_sync_${gameId}`)
       .on('postgres_changes', {
         event: 'UPDATE',
         schema: 'public',
         table: 'games',
-        filter: `id=eq.${gameIdRef.current}`
+        filter: `id=eq.${gameId}`
       }, (payload) => {
         // Ignorer si c'est nous qui avons fait la modif
         if (payload.new && payload.new.state && payload.new.last_updated_by !== user.id) {
+          console.log("🔄 Sync d'état reçu");
           setGameState(payload.new.state);
         }
       })
@@ -213,12 +212,12 @@ export default function Game() {
     return () => {
       supabase.removeChannel(gameChannel);
     };
-  }, [user?.id]);
+  }, [gameId, user?.id]);
 
   // Persistence: Mettre à jour la partie à chaque changement d'état
   useEffect(() => {
     const persistGame = async () => {
-      if (!gameIdRef.current) return;
+      if (!gameId) return;
       
       const isMyTurn = currentPlayer?.id === user?.id;
       const shouldPersist = isMyTurn || (currentPlayer?.isAI && canProcessAI);
@@ -235,7 +234,7 @@ export default function Game() {
             last_updated_by: user.id,
             updated_at: new Date().toISOString()
           })
-          .eq('id', gameIdRef.current);
+          .eq('id', gameId);
       } catch (err) {
         console.error("Erreur persist game:", err);
       }
@@ -246,21 +245,21 @@ export default function Game() {
     if (gameState.diceValue) {
       setLastDiceValue(gameState.diceValue);
     }
-  }, [gameState, user?.id, currentPlayer?.id, canProcessAI]);
+  }, [gameState, user?.id, currentPlayer?.id, canProcessAI, gameId]);
 
   // Heartbeat: Maintenir la partie active dans le Lobby pendant l'attente
   useEffect(() => {
-    if (!gameIdRef.current || gameState.state !== 'WAITING' || existingGameId) return;
+    if (!gameId || gameState.state !== 'WAITING' || existingGameId) return;
 
     const interval = setInterval(async () => {
       await supabase
         .from('games')
         .update({ updated_at: new Date().toISOString() })
-        .eq('id', gameIdRef.current);
+        .eq('id', gameId);
     }, 60000); // Toutes les minutes
 
     return () => clearInterval(interval);
-  }, [gameState.state, existingGameId]);
+  }, [gameState.state, existingGameId, gameId]);
 
   // Gestion du prélèvement de la mise au début REEL de la partie
   useEffect(() => {
@@ -293,57 +292,24 @@ export default function Game() {
 
   // Real-time: Écouter les changements d'état du jeu
   useEffect(() => {
-    if (!gameIdRef.current) return;
+    if (!gameId) return;
 
     // Détection de déconnexion/fermeture d'onglet
     const handleUnload = () => {
-      // On tente une mise à jour rapide avant la fermeture
-      if (gameIdRef.current && gameState.state === 'WAITING') {
-        const blob = new Blob([JSON.stringify({ 
-          status: 'finished', 
-          state: { ...gameState, winner: 'abandoned' } 
-        })], { type: 'application/json' });
-        // Utilisation de sendBeacon pour garantir l'envoi même si l'onglet ferme
-        // Note: l'URL doit être celle de l'API Supabase, c'est complexe sans client.
-        // On va se contenter d'un update classique en useEffect cleanup.
-      }
+      // On peut ajouter une logique ici si besoin
     };
 
     window.addEventListener('beforeunload', handleUnload);
 
-    const channel = supabase
-      .channel(`game_realtime:${gameIdRef.current}`)
-      .on('postgres_changes', { 
-        event: 'UPDATE', 
-        schema: 'public', 
-        table: 'games',
-        filter: `id=eq.${gameIdRef.current}` 
-      }, (payload) => {
-        // On ne synchronise que si l'état est différent (pour éviter les boucles)
-        // Et surtout si ce n'est pas nous qui venons de jouer
-        const isMyTurn = currentPlayer?.id === user?.id;
-        const isAITurn = currentPlayer?.isAI;
-        
-        if (payload.new.state && JSON.stringify(payload.new.state) !== JSON.stringify(gameState)) {
-            // Si c'est le tour de l'autre ou de l'IA (pour les non-owners), on sync
-            if (!isMyTurn && !(isAITurn && canProcessAI)) {
-              setGameState(payload.new.state);
-            }
-        }
-      })
-      .subscribe();
-
     return () => {
       window.removeEventListener('beforeunload', handleUnload);
       
-      // Si on quitte alors qu'on est seul en salle d'attente, on ferme la partie
-      if (gameState.state === 'WAITING' && !existingGameId) {
-        supabase.from('games').update({ status: 'finished' }).eq('id', gameIdRef.current);
+      // Si on quitte alors qu'on est seul en salle d'attente (créateur), on ferme la partie
+      if (gameState.state === 'WAITING' && !existingGameId && gameId) {
+        supabase.from('games').update({ status: 'finished' }).eq('id', gameId);
       }
-      
-      supabase.removeChannel(channel);
     };
-  }, [gameIdRef.current, gameState, user?.id, currentPlayer?.id, canProcessAI, existingGameId]);
+  }, [gameId, gameState.state, existingGameId]);
 
   const handleGameEnd = useCallback(async (winnerColor) => {
     if (isEnding) return;
@@ -489,8 +455,8 @@ export default function Game() {
     if (isEnding) return;
     setIsEnding(true);
     try {
-      if (gameIdRef.current) {
-        await supabase.from('games').update({ status: 'finished' }).eq('id', gameIdRef.current);
+      if (gameId) {
+        await supabase.from('games').update({ status: 'finished' }).eq('id', gameId);
       }
       navigate('/lobby');
     } catch (err) {
