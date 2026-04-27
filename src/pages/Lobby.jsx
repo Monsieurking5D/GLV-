@@ -534,26 +534,6 @@ export default function Lobby() {
               </div>
             )}
 
-            {/* Start button */}
-            <button
-              className={`btn btn-gold w-full start-btn ${(!currentMode?.available || isStarting) ? 'disabled-mode' : ''}`}
-              onClick={handleStartGame}
-              disabled={!currentMode?.available || isStarting}
-              id="start-game-btn"
-            >
-              {isStarting ? (
-                <><div className="spinner" style={{width:18,height:18,borderWidth:2,marginRight:8}} /> Préparation...</>
-              ) : isSoloMode ? (
-                '🤖 Jouer contre l\'IA'
-              ) : isPrivate ? (
-                `🔒 Créer la partie privée — ${selectedBet.toFixed(2)}€`
-              ) : canBet ? (
-                `🎲 Lancer la partie — Mise ${selectedBet.toFixed(2)}€`
-              ) : (
-                `💰 Déposer pour jouer`
-              )}
-            </button>
-
             {!isSoloMode && !canBet && (
               <p className="insufficient-warning">
                 ⚠️ Solde insuffisant. Déposez des fonds pour jouer avec cette mise.

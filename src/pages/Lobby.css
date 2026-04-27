@@ -12,6 +12,12 @@
   padding: var(--space-8) var(--space-6);
 }
 
+.lobby-header-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
 .lobby-header-inner {
   max-width: 1200px;
   margin: 0 auto;
