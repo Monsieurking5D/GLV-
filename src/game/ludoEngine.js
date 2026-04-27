@@ -99,10 +99,16 @@ export function getMovablePieces(gameState) {
         movable.push({ color, id: token.id });
       }
     } else if (token.state === TOKEN_STATE.ACTIVE) {
-      // Un pion actif peut toujours bouger si sa position finale ne dépasse pas le centre
-      const canMove = (token.position + diceValue) <= FINAL_POSITION;
-      if (canMove) {
-        movable.push({ color, id: token.id });
+      if (token.homeStretchPos >= 0) {
+        // Déjà dans le couloir final
+        const canMove = (token.homeStretchPos + diceValue) < HOME_STRETCH_LENGTH;
+        if (canMove) movable.push({ color, id: token.id });
+      } else {
+        // Sur le plateau : peut bouger s'il ne dépasse pas l'arrivée (50 steps + 6 stretch)
+        const startPos = START_POSITIONS[color];
+        const relativePos = (token.position - startPos + 52) % 52;
+        const canMove = (relativePos + diceValue) <= 56;
+        if (canMove) movable.push({ color, id: token.id });
       }
     }
   });

@@ -90,41 +90,43 @@ const Token = memo(({ token, bx, by, tokens, movable, onTokenClick, getStackOffs
 
   return (
     <g
-      className={`lb-token ${movable ? 'lb-token--movable' : ''} ${isAnimating ? 'lb-token--moving' : ''}`}
+      className="lb-token"
       onClick={() => movable && onTokenClick && onTokenClick(token)}
       style={{ 
         cursor: movable ? 'pointer' : 'default',
         transform: `translate(${x}px, ${y}px)` 
       }}
     >
-      {movable && (
-        <circle
-          cx={0}
-          cy={0}
-          r={pinR + 8}
-          className="lb-token-ring"
-          fill="none"
-          stroke={mainColor}
-          strokeWidth="3"
-          strokeDasharray="4 2"
-        />
-      )}
+      <g className={`${movable ? 'lb-token--movable' : ''} ${isAnimating ? 'lb-token--moving' : ''}`}>
+        {movable && (
+          <circle
+            cx={0}
+            cy={0}
+            r={pinR + 8}
+            className="lb-token-ring"
+            fill="none"
+            stroke={mainColor}
+            strokeWidth="3"
+            strokeDasharray="4 2"
+          />
+        )}
 
-      <path
-        d={`
-          M 0 ${pinR * 0.65}
-          L ${-pinR * 0.85} ${-pinR * 0.15}
-          A ${pinR} ${pinR} 0 1 1 ${pinR * 0.85} ${-pinR * 0.15}
-          Z
-        `}
-        fill="#FFFFFF"
-        filter="url(#lb-pin-shadow)"
-        stroke="rgba(0,0,0,0.08)"
-        strokeWidth="0.5"
-      />
-      
-      <circle cx={0} cy={-pinR * 0.25} r={pinR * 0.58} fill={mainColor} />
-      <circle cx={-pinR * 0.25} cy={-pinR * 0.45} r={pinR * 0.18} fill="#FFFFFF" opacity="0.35" />
+        <path
+          d={`
+            M 0 ${pinR * 0.65}
+            L ${-pinR * 0.85} ${-pinR * 0.15}
+            A ${pinR} ${pinR} 0 1 1 ${pinR * 0.85} ${-pinR * 0.15}
+            Z
+          `}
+          fill="#FFFFFF"
+          filter="url(#lb-pin-shadow)"
+          stroke="rgba(0,0,0,0.08)"
+          strokeWidth="0.5"
+        />
+        
+        <circle cx={0} cy={-pinR * 0.25} r={pinR * 0.58} fill={mainColor} />
+        <circle cx={-pinR * 0.25} cy={-pinR * 0.45} r={pinR * 0.18} fill="#FFFFFF" opacity="0.35" />
+      </g>
     </g>
   );
 });

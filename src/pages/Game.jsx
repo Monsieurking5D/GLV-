@@ -176,6 +176,7 @@ export default function Game() {
             state: currentState,
             is_private: isPrivate,
             invite_code: inviteCode,
+            last_updated_by: user.id,
             participant_ids: initialParticipantIds.length > 0 ? initialParticipantIds : [user.id]
           }])
           .select()
