@@ -104,6 +104,8 @@ export default function Game() {
   const [toast, setToast] = useState(null);
   const [activeTab, setActiveTab] = useState('log'); // 'log'
   const [lastDiceValue, setLastDiceValue] = useState(null);
+  const [messages, setMessages] = useState([]);
+  const [newMessage, setNewMessage] = useState('');
   
   const logRef = useRef(null);
   const aiTimeoutRef = useRef(null);
@@ -204,6 +206,7 @@ export default function Game() {
         table: 'games',
         filter: `id=eq.${gameIdRef.current}`
       }, (payload) => {
+        // Ignorer si c'est nous qui avons fait la modif
         if (payload.new && payload.new.state && payload.new.last_updated_by !== user.id) {
           setGameState(payload.new.state);
         }
@@ -232,6 +235,7 @@ export default function Game() {
             state: gameState,
             status: gameState.winner ? 'finished' : 'active',
             winner: gameState.winner,
+            last_updated_by: user.id,
             updated_at: new Date().toISOString()
           })
           .eq('id', gameIdRef.current);
@@ -727,22 +731,63 @@ export default function Game() {
         {!isMobile && (
           <div className="game-right-panel">
             <div className="right-tabs">
-              <div className="tab-btn active">📋 Journal de partie</div>
+              <button 
+                className={`tab-btn ${activeTab === 'log' ? 'active' : ''}`}
+                onClick={() => setActiveTab('log')}
+              >
+                📋 Journal
+              </button>
+              <button 
+                className={`tab-btn ${activeTab === 'chat' ? 'active' : ''}`}
+                onClick={() => setActiveTab('chat')}
+              >
+                💬 Chat
+              </button>
             </div>
 
             <div className="tab-content">
-              <div className="game-log" ref={logRef}>
-                {displayLog.length === 0 ? (
-                  <div className="log-empty">La partie commence...</div>
-                ) : (
-                  displayLog.map((entry, i) => (
-                    <div key={i} className="log-entry">
-                      <span className="log-time">{new Date(entry.time).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
-                      <span className="log-text">{entry.text}</span>
-                    </div>
-                  ))
-                )}
-              </div>
+              {activeTab === 'log' ? (
+                <div className="game-log" ref={logRef}>
+                  {displayLog.length === 0 ? (
+                    <div className="log-empty">La partie commence...</div>
+                  ) : (
+                    displayLog.map((entry, i) => (
+                      <div key={i} className="log-entry">
+                        <span className="log-time">{new Date(entry.time).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
+                        <span className="log-text">{entry.text}</span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              ) : (
+                <div className="chat-container">
+                  <div className="chat-messages">
+                    {messages.length === 0 ? (
+                      <div className="log-empty">Aucun message...</div>
+                    ) : (
+                      messages.map((msg, i) => (
+                        <div key={msg.id || i} className={`chat-bubble ${msg.user_id === user?.id ? 'mine' : ''}`}>
+                          <div className="chat-author">{msg.username}</div>
+                          <div className="chat-content">{msg.content}</div>
+                        </div>
+                      ))
+                    )}
+                    <div ref={chatEndRef} />
+                  </div>
+                  <form className="chat-input-form" onSubmit={handleSendMessage}>
+                    <input
+                      type="text"
+                      className="input chat-input"
+                      placeholder="Votre message..."
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                    />
+                    <button type="submit" className="chat-send-btn">
+                      <span>🚀</span>
+                    </button>
+                  </form>
+                </div>
+              )}
             </div>
 
             <div className="score-section">

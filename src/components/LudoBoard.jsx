@@ -150,13 +150,14 @@ const LudoBoard = memo(({ gameState, onTokenClick, movablePieces = [] }) => {
     if (token.state === TOKEN_STATE.FINISHED) {
       return cellXY(7, 7);
     }
-    if (token.state === TOKEN_STATE.MOVING || token.state === TOKEN_STATE.ON_PATH) {
-      const [c, r] = MAIN_PATH_COORDS[token.position] || [7, 7];
-      return cellXY(c, r);
-    }
-    if (token.state === TOKEN_STATE.HOME_STRETCH) {
-      const [c, r] = HOME_STRETCH_COORDS[token.color][token.position] || [7, 7];
-      return cellXY(c, r);
+    if (token.state === TOKEN_STATE.ACTIVE) {
+      if (token.homeStretchPos >= 0) {
+        const [c, r] = HOME_STRETCH_COORDS[token.color][token.homeStretchPos] || [7, 7];
+        return cellXY(c, r);
+      } else {
+        const [c, r] = MAIN_PATH_COORDS[token.position] || [7, 7];
+        return cellXY(c, r);
+      }
     }
     return cellXY(7, 7);
   }
@@ -164,8 +165,7 @@ const LudoBoard = memo(({ gameState, onTokenClick, movablePieces = [] }) => {
   function getStackOffset(token, allTokens) {
     const samePos = Object.values(allTokens).flat().filter(t => 
       t.state === token.state && 
-      (t.state !== TOKEN_STATE.ON_PATH || t.position === token.position) &&
-      (t.state !== TOKEN_STATE.HOME_STRETCH || (t.position === token.position && t.color === token.color)) &&
+      (t.state === TOKEN_STATE.ACTIVE && t.position === token.position && t.homeStretchPos === token.homeStretchPos) &&
       t.state !== TOKEN_STATE.HOME &&
       t.state !== TOKEN_STATE.FINISHED
     );

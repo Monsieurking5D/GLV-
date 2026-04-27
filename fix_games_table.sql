@@ -4,7 +4,8 @@
 ALTER TABLE public.games 
 ADD COLUMN IF NOT EXISTS invite_code TEXT,
 ADD COLUMN IF NOT EXISTS is_private BOOLEAN DEFAULT false,
-ADD COLUMN IF NOT EXISTS difficulty TEXT DEFAULT 'medium';
+ADD COLUMN IF NOT EXISTS difficulty TEXT DEFAULT 'medium',
+ADD COLUMN IF NOT EXISTS last_updated_by UUID REFERENCES auth.users(id);
 
 -- Index pour accélérer la recherche par code d'invitation
 CREATE INDEX IF NOT EXISTS idx_games_invite_code ON public.games(invite_code) WHERE status = 'active';
