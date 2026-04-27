@@ -138,17 +138,240 @@
 /* Lobby columns */
 .lobby-columns {
   display: grid;
-  grid-template-columns: 1fr 1fr 340px;
-  gap: var(--space-6);
+  grid-template-columns: 1fr 340px;
+  gap: var(--space-8);
   align-items: start;
 }
 
-.lobby-left,
-.lobby-center,
-.lobby-right {
+@media (max-width: 1024px) {
+  .lobby-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Config Modal specific styles */
+.config-modal {
+  max-width: 500px !important;
+  padding: 0 !important;
+  overflow: hidden;
+}
+
+.modal-header {
+  padding: var(--space-5) var(--space-6);
+  border-bottom: 1px solid var(--border-glass);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-header h3 {
+  font-family: 'Outfit', sans-serif;
+  font-size: var(--text-base);
+  letter-spacing: 0.1em;
+  color: var(--gold-primary);
+  margin: 0;
+}
+
+.config-section {
+  padding: var(--space-5) var(--space-6);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.config-section:last-of-type {
+  border-bottom: none;
+}
+
+.config-label {
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+  margin-bottom: var(--space-3);
+  font-weight: 600;
+}
+
+.modes-grid-popup {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-3);
+}
+
+.mode-card-popup {
+  background: var(--bg-glass);
+  border: 1.5px solid var(--border-glass);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  cursor: pointer;
+  transition: all 0.2s ease;
   display: flex;
   flex-direction: column;
-  gap: var(--space-5);
+  align-items: center;
+  gap: 4px;
+}
+
+.mode-card-popup:hover {
+  border-color: rgba(245,197,24,0.3);
+}
+
+.mode-card-popup.selected {
+  border-color: var(--gold-primary);
+  background: rgba(245,197,24,0.08);
+}
+
+.mode-card-popup.disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.mode-card-popup .mode-icon {
+  width: 32px;
+  height: 32px;
+  font-size: 1.2rem;
+  background: none;
+}
+
+.mode-card-popup .mode-name {
+  font-size: var(--text-sm);
+  font-weight: 700;
+}
+
+.mode-card-popup .mode-multiplier {
+  font-size: var(--text-xs);
+  color: var(--gold-primary);
+  font-weight: 800;
+}
+
+.bet-amounts-popup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.bet-summary-popup {
+  margin-top: var(--space-4);
+  background: rgba(245,197,24,0.03);
+  border-radius: var(--radius-sm);
+  padding: var(--space-3);
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.summary-row.highlight {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed rgba(245,197,24,0.1);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.modal-footer {
+  padding: var(--space-5) var(--space-6);
+  background: rgba(0,0,0,0.2);
+}
+
+/* Public Games Card style */
+.games-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--space-4);
+}
+
+.game-card-public {
+  background: var(--bg-card);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: transform 0.2s ease;
+}
+
+.game-card-public:hover {
+  transform: translateY(-2px);
+  border-color: rgba(245,197,24,0.2);
+}
+
+.game-card-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.game-card-mode {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.mode-tag {
+  font-size: 10px;
+  font-weight: 900;
+  color: var(--gold-primary);
+  background: rgba(245,197,24,0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.difficulty-tag {
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.game-card-bet {
+  font-family: 'Outfit', sans-serif;
+  font-size: var(--text-lg);
+  font-weight: 800;
+}
+
+.game-card-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-2);
+}
+
+.game-card-players {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+
+/* Utils */
+.btn-close {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 24px;
+  cursor: pointer;
+}
+
+.btn-close:hover {
+  color: var(--text-primary);
+}
+
+.private-toggle-card.popup {
+  margin-bottom: 0;
+  background: none;
+  border-color: var(--border-subtle);
+}
+
+/* Stats large */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-4);
+}
+
+@media (max-width: 768px) {
+  .stats-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 .lobby-section-title {

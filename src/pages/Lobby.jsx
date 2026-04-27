@@ -60,6 +60,7 @@ export default function Lobby() {
   const [selectedBet, setSelectedBet] = useState(10);
   const [selectedDifficulty, setSelectedDifficulty] = useState('medium');
   const [showDepositModal, setShowDepositModal] = useState(false);
+  const [showConfigModal, setShowConfigModal] = useState(false);
   const [depositAmount, setDepositAmount] = useState(50);
   const [depositLoading, setDepositLoading] = useState(false);
   const [toast, setToast] = useState(null);
@@ -321,49 +322,7 @@ export default function Lobby() {
       setIsStarting(false);
     }
   };
-      }
 
-      // Vérifier si la partie est maintenant pleine pour changer l'état
-      const isFull = newParticipantIds.length >= (game.max_players || 2);
-      const newState = { ...game.state };
-      if (isFull) {
-        newState.state = 'PLAYING';
-        newState.players = updatedPlayers;
-      }
-
-      await supabase
-        .from('games')
-        .update({ 
-          participant_ids: newParticipantIds,
-          players: updatedPlayers,
-          state: newState,
-          last_updated_by: profile.id,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', game.id);
-
-      showToast('✅ Partie rejointe !');
-      
-      navigate('/game', { 
-        state: { 
-          mode: game.mode,
-          bet: game.bet_amount,
-          players: updatedPlayers,
-          difficulty: game.difficulty,
-          isPrivate: game.is_private,
-          inviteCode: game.invite_code,
-          gameId: game.id,
-          participantIds: newParticipantIds,
-          isSolo: false
-        } 
-      });
-    } catch (err) {
-      console.error("Erreur join game:", err);
-      showToast('❌ Impossible de rejoindre la partie.', 'error');
-    } finally {
-      setIsStarting(false);
-    }
-  };
 
   const handleJoinPrivate = async () => {
     if (!joinCode || joinCode.length < 6) {
@@ -450,15 +409,15 @@ export default function Lobby() {
             </button>
             
             <button
-              className={`btn btn-gold header-start-btn ${(!currentMode?.available || isStarting) ? 'disabled-mode' : ''}`}
-              onClick={handleStartGame}
-              disabled={!currentMode?.available || isStarting}
+              className={`btn btn-gold header-start-btn ${isStarting ? 'disabled-mode' : ''}`}
+              onClick={() => setShowConfigModal(true)}
+              disabled={isStarting}
               id="header-start-btn"
             >
               {isStarting ? (
                 <div className="spinner" style={{width:16,height:16,borderWidth:2}} />
               ) : (
-                <>🎲 Jouer — {isSoloMode ? 'Gratuit' : `${selectedBet.toFixed(2)}€`}</>
+                <>🎲 Créer une partie</>
               )}
             </button>
 
@@ -475,70 +434,30 @@ export default function Lobby() {
 
       <div className="lobby-body">
         <div className="lobby-columns">
-          {/* Left — Game config */}
+          {/* Left — Public Games & Stats */}
           <div className="lobby-left">
-            <div className="lobby-section-title">🎮 Choisir un mode de jeu</div>
-
-            {/* Game modes */}
-            <div className="modes-grid">
-              {GAME_MODES.map(mode => (
-                <div
-                  key={mode.id}
-                  className={`mode-card 
-                    ${selectedMode === mode.id ? 'selected' : ''} 
-                    ${!mode.available ? 'disabled' : ''}`}
-                  onClick={() => mode.available && startTransition(() => setSelectedMode(mode.id))}
-                  id={`mode-${mode.id}`}
-                >
-                  <div className="mode-icon">{mode.icon}</div>
-                  <div className="mode-info">
-                    <div className="mode-name">{mode.label}</div>
-                    <div className="mode-desc">{mode.desc}</div>
-                  </div>
-                  <div className="mode-right">
-                    <div className={`mode-multiplier ${mode.nobet ? 'nobet' : ''}`}>
-                      {mode.multiplier}
-                    </div>
-                    {!mode.available && (
-                      <span className="badge badge-gray coming-soon-badge">
-                        Bientôt
-                      </span>
-                    )}
-                    {selectedMode === mode.id && mode.available && (
-                      <div className="mode-check">✓</div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Stats (Moved here for better visibility) */}
-            <div className="stats-grid-compact">
+            {/* Stats (Large) */}
+            <div className="stats-row" style={{marginBottom: 'var(--space-2)'}}>
               {[
-                { label: 'Parties', value: stats.played, icon: '🎮' },
-                { label: 'Victoires', value: stats.won, icon: '🏆' },
-                { label: 'Win Rate', value: `${stats.winRate}%`, icon: '📈' },
+                { label: 'Parties Jouées', value: stats.played, icon: '🎮' },
+                { label: 'Victoires', value: stats.won, icon: '🏆', gold: true },
+                { label: 'Taux de Win', value: `${stats.winRate}%`, icon: '📈' },
+                { label: 'Portefeuille', value: `${balance.toFixed(2)}€`, icon: '💰', gold: true, deposit: true },
               ].map((s, i) => (
-                <div className="stat-card-mini" key={i}>
-                  <span className="stat-icon-mini">{s.icon}</span>
-                  <div className="stat-info-mini">
-                    <span className="stat-value-mini">{s.value}</span>
-                    <span className="stat-label-mini">{s.label}</span>
-                  </div>
+                <div 
+                  key={i} 
+                  className={`stat-card ${s.deposit ? 'deposit-card-btn' : ''}`}
+                  onClick={s.deposit ? () => setShowDepositModal(true) : undefined}
+                >
+                  <span className="stat-icon">{s.icon}</span>
+                  <span className={`stat-value ${s.gold ? 'gold' : ''}`}>{s.value}</span>
+                  <span className="stat-label">{s.label}</span>
                 </div>
               ))}
-              <div className="stat-card-mini deposit-mini" onClick={() => setShowDepositModal(true)}>
-                <span className="stat-icon-mini">💰</span>
-                <div className="stat-info-mini">
-                  <span className="stat-value-mini gold">Portefeuille</span>
-                  <span className="stat-label-mini">{balance.toFixed(2)}€</span>
-                </div>
-              </div>
             </div>
 
-            {/* Center — Public Games (Moved to Left) */}
             <div className="lobby-section-title" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'var(--space-4)'}}>
-              🌍 Parties publiques
+              🌍 Parties publiques en cours
               <button 
                className={`btn-refresh ${loadingGames ? 'rotating' : ''}`} 
                onClick={fetchPublicGames}
@@ -562,161 +481,89 @@ export default function Lobby() {
                 🔄
               </button>
             </div>
-            <div className="public-games-list" style={{ minHeight: 'auto' }}>
+            
+            <div className="public-games-list">
               {loadingGames ? (
-                <div className="games-empty" style={{ padding: 'var(--space-6)' }}>Chargement des parties...</div>
+                <div className="games-empty">
+                  <div className="spinner" />
+                  <p>Recherche de parties...</p>
+                </div>
               ) : publicGames.length === 0 ? (
-                <div className="games-empty" style={{ padding: 'var(--space-6)' }}>
+                <div className="games-empty">
                   <span>🎲</span>
-                  <p>Aucune partie publique disponible.</p>
+                  <p>Aucune partie publique disponible pour le moment.</p>
+                  <button className="btn btn-ghost btn-sm" onClick={() => setShowConfigModal(true)} style={{marginTop: 16}}>
+                    Créer la première partie
+                  </button>
                 </div>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-                  {publicGames.slice(0, 3).map(game => {
+                <div className="games-grid">
+                  {publicGames.map(game => {
                     const participantsCount = game.participant_ids?.length || 1;
                     const isFull = participantsCount >= (game.max_players || 2);
                     return (
-                      <div key={game.id} className={`game-item-card ${isFull ? 'full' : ''}`} style={{ padding: 'var(--space-2) var(--space-3)' }}>
-                        <div className="game-item-info">
-                          <div className="game-item-main" style={{ gap: 'var(--space-2)' }}>
-                            <span className="game-item-mode" style={{ fontSize: 'var(--text-xs)' }}>{game.mode === '1v1' ? 'Duel' : game.mode}</span>
-                            <span className="game-item-bet" style={{ fontSize: 'var(--text-sm)' }}>{game.bet_amount.toFixed(2)}€</span>
+                      <div key={game.id} className={`game-card-public ${isFull ? 'full' : ''}`}>
+                        <div className="game-card-left">
+                          <div className="game-card-mode">
+                            <span className="mode-tag">{game.mode === '1v1' ? 'DUEL' : game.mode.toUpperCase()}</span>
+                            <span className="difficulty-tag" style={{ color: game.difficulty === 'hard' ? '#EF4444' : game.difficulty === 'medium' ? '#F59E0B' : '#22C55E' }}>
+                              ● {game.difficulty === 'hard' ? 'DIFFICILE' : game.difficulty === 'medium' ? 'MOYEN' : 'FACILE'}
+                            </span>
                           </div>
+                          <div className="game-card-bet">{game.bet_amount.toFixed(2)}€</div>
                         </div>
-                        <button 
-                          className="btn btn-gold btn-xs" 
-                          disabled={isFull || isStarting}
-                          onClick={() => handleJoinGame(game)}
-                          style={{ padding: '4px 8px', fontSize: '10px' }}
-                        >
-                          {isFull ? 'Pleine' : 'Rejoindre'}
-                        </button>
+                        <div className="game-card-right">
+                          <div className="game-card-players">
+                            👤 {participantsCount}/{game.max_players || 2}
+                          </div>
+                          <button 
+                            className="btn btn-gold btn-sm" 
+                            disabled={isFull || isStarting}
+                            onClick={() => handleJoinGame(game)}
+                          >
+                            {isFull ? 'Pleine' : 'Rejoindre'}
+                          </button>
+                        </div>
                       </div>
                     );
                   })}
                 </div>
               )}
             </div>
-          </div>
 
-          {/* Center — Bet Config (Moved from Left) */}
-          <div className="lobby-center">
-            <div className="lobby-section-title">⚙️ Configuration de la partie</div>
-            
-            {!isSoloMode ? (
-              <>
-                <div className="bet-config">
-                  <div className="private-toggle-card" onClick={() => setIsPrivate(!isPrivate)}>
-                    <div className="private-info">
-                      <span className="private-label">Partie Privée</span>
-                      <span className="private-desc">Générez un code pour inviter vos amis</span>
-                    </div>
-                    <div className={`toggle-switch ${isPrivate ? 'on' : ''}`}>
-                      <div className="toggle-handle" />
-                    </div>
-                  </div>
-
-                  <div className="bet-amounts">
-                    {BET_AMOUNTS.map(amount => (
-                      <button
-                        key={amount}
-                        className={`bet-amount-btn ${selectedBet === amount ? 'selected' : ''} ${balance < amount ? 'insufficient' : ''}`}
-                        onClick={() => startTransition(() => setSelectedBet(amount))}
-                        id={`bet-${amount.toString().replace('.', '-')}`}
-                      >
-                        {amount.toFixed(2)}€
-                        {balance < amount && <span className="insufficient-icon">⚠</span>}
-                      </button>
-                    ))}
-                  </div>
-
-                  {selectedBet && (
-                    <div className="bet-summary">
-                      <div className="bet-summary-row">
-                        <span>Votre mise</span>
-                        <span className="bet-summary-value">{selectedBet.toFixed(2)}€</span>
-                      </div>
-                      <div className="bet-summary-row">
-                        <span>Pot total ({currentMode.players} joueurs)</span>
-                        <span className="bet-summary-value">{(selectedBet * currentMode.players).toFixed(2)}€</span>
-                      </div>
-                      <div className="bet-summary-row highlight">
-                        <span>Gains potentiels</span>
-                        <span className="bet-summary-value gold">
-                          {((selectedBet * currentMode.players) - Math.min(selectedBet * currentMode.players * 0.10, 3.00)).toFixed(2)}€
-                        </span>
-                      </div>
-                      <div className="bet-summary-note">
-                        Commission : 10% (Plafonnée à 3€ max)
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {!canBet && (
-                  <p className="insufficient-warning" style={{ marginTop: 'var(--space-2)' }}>
-                    ⚠️ Solde insuffisant. Déposez des fonds pour jouer.
-                  </p>
-                )}
-
-                <div className="join-private-section">
-                  <div className="divider-text">OU REJOINDRE PAR CODE</div>
-                  <div className="join-private-card">
-                    <input 
-                      type="text" 
-                      placeholder="Code d'invitation" 
-                      className="input"
-                      value={joinCode}
-                      onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-                      maxLength={6}
-                    />
-                    <button className="btn btn-gold" onClick={handleJoinPrivate}>
-                      Rejoindre
-                    </button>
-                  </div>
-                </div>
-              </>
-            ) : (
-              <div className="bet-config">
-                <div className="lobby-section-title" style={{fontSize: 'var(--text-sm)'}}>🤖 Niveau de l'IA</div>
-                <div className="difficulty-buttons">
-                  {DIFFICULTIES.map(d => (
-                    <button
-                      key={d.id}
-                      className={`difficulty-btn ${selectedDifficulty === d.id ? 'selected' : ''}`}
-                      style={{ '--diff-color': d.color }}
-                      onClick={() => startTransition(() => setSelectedDifficulty(d.id))}
-                    >
-                      {d.icon} {d.label}
-                    </button>
-                  ))}
-                </div>
-                <p style={{ marginTop: 'var(--space-4)', fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>
-                  En mode Solo, aucune mise n'est requise. C'est le mode idéal pour s'entraîner !
-                </p>
+            <div className="join-private-section" style={{marginTop: 'var(--space-4)'}}>
+              <div className="divider-text">OU REJOINDRE PAR CODE PRIVÉ</div>
+              <div className="join-private-card">
+                <input 
+                  type="text" 
+                  placeholder="Entrez le code d'invitation" 
+                  className="input"
+                  value={joinCode}
+                  onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+                  maxLength={6}
+                />
+                <button className="btn btn-gold" onClick={handleJoinPrivate} disabled={isStarting}>
+                  Rejoindre
+                </button>
               </div>
-            )}
+            </div>
           </div>
 
-
-          {/* Right — Transactions */}
+          {/* Right — Transactions & Rules */}
           <div className="lobby-right">
             <div className="lobby-section-title">📊 Activité récente</div>
-
             <div className="transactions-list">
               {transactions.length === 0 ? (
                 <div className="no-transactions">
                   <span>🎲</span>
-                  <p>Aucune transaction pour le moment.</p>
+                  <p>Aucune transaction récente.</p>
                 </div>
               ) : (
                 transactions.map(tx => (
                   <div className="transaction-item" key={tx.id}>
                     <div className="tx-info">
                       <span className="tx-desc">{tx.description}</span>
-                      <span className="tx-date">
-                        {new Date(tx.created_at).toLocaleDateString('fr-FR')}
-                      </span>
+                      <span className="tx-date">{new Date(tx.created_at).toLocaleDateString('fr-FR')}</span>
                     </div>
                     <span className={`tx-amount ${tx.amount > 0 ? 'positive' : 'negative'}`}>
                       {tx.amount > 0 ? '+' : ''}{tx.amount.toFixed(2)}€
@@ -726,25 +573,128 @@ export default function Lobby() {
               )}
             </div>
 
-            {/* Règles rapides */}
             <div className="quick-rules">
-              <div className="lobby-section-title" style={{marginBottom: 12}}>
-                📜 Règles rapides
-              </div>
+              <div className="lobby-section-title" style={{marginBottom: 12}}>📜 Règles du jeu</div>
               <ul className="rules-list">
-                <li>🎲 Lancez le dé pour jouer</li>
-                <li>🔑 Un 6 pour sortir un pion</li>
-                <li>💥 Capturez les pions ennemis</li>
-                <li>⭐ Les étoiles sont des cases sûres</li>
-                <li>🏁 4 pions au centre = Victoire !</li>
-                <li>🔄 Un 6 donne un tour supplémentaire</li>
-                <li>⛔ 3 fois 6 d'affilée = tour perdu</li>
+                <li>🎲 Lancez le dé pour jouer votre tour</li>
+                <li>🔑 Un 6 est requis pour sortir un pion de la base</li>
+                <li>💥 Capturez les pions ennemis en tombant sur leur case</li>
+                <li>⭐ Les étoiles sont des zones de sécurité</li>
+                <li>🏁 Amenez vos 4 pions au centre pour gagner</li>
+                <li>🔄 Un 6 offre un tour bonus (limité à 2 d'affilée)</li>
               </ul>
             </div>
           </div>
         </div>
-
       </div>
+
+      {/* Config Game Modal */}
+      {showConfigModal && (
+        <div className="modal-overlay" onClick={() => setShowConfigModal(false)}>
+          <div className="modal-content config-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>⚙️ CONFIGURATION DE LA PARTIE</h3>
+              <button className="btn-close" onClick={() => setShowConfigModal(false)}>×</button>
+            </div>
+
+            <div className="config-section">
+              <div className="config-label">Nombre de joueurs</div>
+              <div className="modes-grid-popup">
+                {GAME_MODES.map(mode => (
+                  <div
+                    key={mode.id}
+                    className={`mode-card-popup ${selectedMode === mode.id ? 'selected' : ''} ${!mode.available ? 'disabled' : ''}`}
+                    onClick={() => mode.available && setSelectedMode(mode.id)}
+                  >
+                    <div className="mode-icon">{mode.icon}</div>
+                    <div className="mode-name">{mode.label}</div>
+                    <div className="mode-multiplier">{mode.multiplier}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {!isSoloMode ? (
+              <>
+                <div className="config-section">
+                  <div className="config-label">Mise de la partie</div>
+                  <div className="bet-amounts-popup">
+                    {BET_AMOUNTS.map(amount => (
+                      <button
+                        key={amount}
+                        className={`bet-amount-btn ${selectedBet === amount ? 'selected' : ''} ${balance < amount ? 'insufficient' : ''}`}
+                        onClick={() => setSelectedBet(amount)}
+                      >
+                        {amount.toFixed(amount % 1 === 0 ? 0 : 2)}€
+                      </button>
+                    ))}
+                  </div>
+                  
+                  {selectedBet && (
+                    <div className="bet-summary-popup">
+                      <div className="summary-row">
+                        <span>Pot total</span>
+                        <span>{(selectedBet * currentMode.players).toFixed(2)}€</span>
+                      </div>
+                      <div className="summary-row highlight">
+                        <span>Gain espéré (net)</span>
+                        <span className="gold">
+                          {((selectedBet * currentMode.players) - Math.min(selectedBet * currentMode.players * 0.10, 3.00)).toFixed(2)}€
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="config-section">
+                  <div className="private-toggle-card popup" onClick={() => setIsPrivate(!isPrivate)}>
+                    <div className="private-info">
+                      <span className="private-label">Partie Privée ?</span>
+                      <span className="private-desc">Seuls ceux avec le code pourront rejoindre</span>
+                    </div>
+                    <div className={`toggle-switch ${isPrivate ? 'on' : ''}`}>
+                      <div className="toggle-handle" />
+                    </div>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="config-section">
+                <div className="config-label">Difficulté de l'IA</div>
+                <div className="difficulty-buttons">
+                  {DIFFICULTIES.map(d => (
+                    <button
+                      key={d.id}
+                      className={`difficulty-btn ${selectedDifficulty === d.id ? 'selected' : ''}`}
+                      style={{ '--diff-color': d.color }}
+                      onClick={() => setSelectedDifficulty(d.id)}
+                    >
+                      {d.icon} {d.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="modal-footer">
+              {!isSoloMode && !canBet && (
+                <p className="insufficient-warning">⚠️ Solde insuffisant</p>
+              )}
+              <button
+                className="btn btn-gold w-full start-btn"
+                onClick={handleStartGame}
+                disabled={isStarting || (!isSoloMode && !canBet)}
+              >
+                {isStarting ? (
+                  <div className="spinner" style={{width:20,height:20}} />
+                ) : (
+                  <>🚀 Lancer la partie</>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Deposit Modal */}
       {showDepositModal && (
