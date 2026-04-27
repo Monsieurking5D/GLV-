@@ -695,6 +695,23 @@
   to { transform: rotate(360deg); }
 }
 
+.header-deposit-btn {
+  padding: var(--space-3) var(--space-5) !important;
+  font-size: var(--text-sm) !important;
+  font-weight: 700 !important;
+  border: 1.5px solid var(--gold-primary) !important;
+  color: var(--gold-primary) !important;
+  background: rgba(245, 197, 24, 0.05) !important;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.header-deposit-btn:hover {
+  background: rgba(245, 197, 24, 0.1) !important;
+  transform: translateY(-2px);
+}
+
 .header-start-btn {
   padding: var(--space-3) var(--space-6) !important;
   font-size: var(--text-sm) !important;
@@ -718,8 +735,11 @@
   .lobby-header-right {
     width: 100%;
     margin-top: var(--space-4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
   }
-  .header-start-btn {
+  .header-start-btn, .header-deposit-btn {
     width: 100%;
     justify-content: center;
   }

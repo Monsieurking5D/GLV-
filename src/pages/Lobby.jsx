@@ -367,6 +367,13 @@ export default function Lobby() {
             <h1 className="lobby-title">Tableau de bord</h1>
           </div>
           <div className="lobby-header-right">
+            <button 
+              className="btn btn-ghost header-deposit-btn" 
+              onClick={() => setShowDepositModal(true)}
+            >
+              💰 Dépôt
+            </button>
+            
             <button
               className={`btn btn-gold header-start-btn ${(!currentMode?.available || isStarting) ? 'disabled-mode' : ''}`}
               onClick={handleStartGame}
@@ -376,7 +383,7 @@ export default function Lobby() {
               {isStarting ? (
                 <div className="spinner" style={{width:16,height:16,borderWidth:2}} />
               ) : (
-                <>🎲 Lancer la partie — {isSoloMode ? 'Gratuit' : `${selectedBet.toFixed(2)}€`}</>
+                <>🎲 Jouer — {isSoloMode ? 'Gratuit' : `${selectedBet.toFixed(2)}€`}</>
               )}
             </button>
 
