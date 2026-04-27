@@ -431,6 +431,16 @@ export default function Auth() {
               <p>{mode === 'login' ? 'Connectez-vous pour jouer.' : '5€ de bonus à l\'inscription 🎁'}</p>
             </div>
 
+            {searchParams.get('reason') === 'update' && (
+              <div className="auth-info-banner" style={{ 
+                background: 'rgba(59, 130, 246, 0.1)', color: '#3B82F6', padding: 'var(--space-3)', 
+                borderRadius: 'var(--radius-md)', marginBottom: 'var(--space-4)',
+                border: '1px solid rgba(59, 130, 246, 0.2)', fontSize: 'var(--text-sm)', textAlign: 'center'
+              }}>
+                ℹ️ L'application a été mise à jour. Veuillez vous reconnecter pour profiter des dernières nouveautés.
+              </div>
+            )}
+
             {successMessage && <div className="auth-success" style={{ 
               background: 'rgba(16, 185, 129, 0.1)', color: '#10B981', padding: 'var(--space-3)', 
               borderRadius: 'var(--radius-md)', marginBottom: 'var(--space-4)',

@@ -1,1 +1,1 @@
-{\"version\": \"$(date +%s)\"}  
+{"version": "dev"}

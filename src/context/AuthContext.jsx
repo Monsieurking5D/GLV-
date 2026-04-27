@@ -65,15 +65,45 @@ export function AuthProvider({ children }) {
   };
 
   useEffect(() => {
+    // 0. Vérification de la version pour forcer la déconnexion après un push
+    const checkVersion = async () => {
+      try {
+        const response = await fetch('/version.json?t=' + Date.now());
+        if (response.ok) {
+          const data = await response.json();
+          const currentVersion = data.version;
+          const storedVersion = localStorage.getItem('app_version');
+          
+          if (storedVersion && storedVersion !== currentVersion && currentVersion !== 'dev') {
+            console.log("🚀 Nouvelle version détectée, déconnexion forcée...");
+            localStorage.setItem('app_version', currentVersion);
+            await supabase.auth.signOut();
+            window.location.href = '/auth?mode=login&reason=update';
+            return true;
+          }
+          localStorage.setItem('app_version', currentVersion);
+        }
+      } catch (err) {
+        console.warn("Échec du check de version:", err);
+      }
+      return false;
+    };
+
     // 1. Initialisation
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const init = async () => {
+      const isOutdated = await checkVersion();
+      if (isOutdated) return;
+
+      const { data: { session } } = await supabase.auth.getSession();
       setUser(session?.user || null);
       if (session?.user) {
-        fetchProfile(session.user.id).catch(() => {}); // On ignore l'erreur d'init
+        fetchProfile(session.user.id).catch(() => {});
       } else {
         setLoading(false);
       }
-    });
+    };
+
+    init();
 
     // 2. Écouter les changements (connexion, déconnexion)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
