@@ -223,33 +223,104 @@ export default function Lobby() {
     }
   };
 
-  const handleJoinGame = async (game) => {
+  const handleJoinGame = async (gameToJoin) => {
     if (isStarting) return;
     setIsStarting(true);
-
+    
     try {
-      // Vérification du solde
-      if (balance < game.bet_amount) {
-        showToast(`💰 Solde insuffisant (${game.bet_amount}€ requis).`, 'error');
+      // 1. Récupérer la version la plus fraîche de la partie
+      const { data: game, error: fetchError } = await supabase
+        .from('games')
+        .select('*')
+        .eq('id', gameToJoin.id)
+        .single();
+
+      if (fetchError || !game) throw new Error("Partie introuvable");
+
+      if (game.participant_ids && game.participant_ids.includes(profile.id)) {
+        // Déjà dedans, on redirige juste
+        navigate('/game', { state: { gameId: game.id, mode: game.mode, bet: game.bet_amount } });
+        return;
+      }
+
+      if (game.participant_ids && game.participant_ids.length >= (game.max_players || 2)) {
+        showToast('❌ Cette partie est déjà complète.', 'error');
+        return;
+      }
+
+      // 2. Vérifier le solde si mise
+      if (game.bet_amount > (profile.wallet_balance || 0)) {
+        showToast('💰 Solde insuffisant pour cette partie !', 'error');
         setShowDepositModal(true);
         return;
       }
 
-      // Suppression du prélèvement immédiat - sera fait au lancement réel de la partie (PLAYING)
-
-      // Mettre à jour la partie
       const newParticipantIds = [...(game.participant_ids || []), profile.id];
-      const updatedPlayers = [...game.players];
-      const emptySlotIndex = updatedPlayers.findIndex(p => p.id === null || p.id.startsWith('ai_'));
+      const updatedPlayers = [...(game.players || [])];
+      
+      // Trouver la première place disponible (soit null, soit une IA)
+      let emptySlotIndex = updatedPlayers.findIndex(p => !p.id || p.id.startsWith('ai_') || p.id === 'ai');
       
       if (emptySlotIndex !== -1) {
         updatedPlayers[emptySlotIndex] = {
           id: profile.id,
           name: profile.username,
           color: updatedPlayers[emptySlotIndex].color,
-          isAI: false,
-          bet_paid: game.bet_amount > 0
+          isAI: false
         };
+      } else {
+        // Fallback si pas de slot IA trouvé mais place libre dans participant_ids
+        updatedPlayers.push({
+          id: profile.id,
+          name: profile.username,
+          color: ['red', 'green', 'blue', 'yellow'][newParticipantIds.length - 1],
+          isAI: false
+        });
+      }
+
+      // 3. Mettre à jour l'état du jeu
+      const isFull = newParticipantIds.length >= (game.max_players || 2);
+      const newState = { ...game.state };
+      if (isFull) {
+        newState.state = 'PLAYING';
+        newState.players = updatedPlayers;
+      }
+
+      const { error: updateError } = await supabase
+        .from('games')
+        .update({ 
+          participant_ids: newParticipantIds,
+          players: updatedPlayers,
+          state: newState,
+          last_updated_by: profile.id,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', game.id);
+
+      if (updateError) throw updateError;
+
+      showToast('✅ Partie rejointe !');
+      
+      navigate('/game', { 
+        state: { 
+          mode: game.mode,
+          bet: game.bet_amount,
+          players: updatedPlayers,
+          difficulty: game.difficulty,
+          isPrivate: game.is_private,
+          inviteCode: game.invite_code,
+          gameId: game.id,
+          participantIds: newParticipantIds,
+          isSolo: false
+        } 
+      });
+    } catch (err) {
+      console.error("Erreur join game:", err);
+      showToast(err.message || '❌ Impossible de rejoindre la partie.', 'error');
+    } finally {
+      setIsStarting(false);
+    }
+  };
       }
 
       // Vérifier si la partie est maintenant pleine pour changer l'état

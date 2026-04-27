@@ -145,10 +145,26 @@ export default function Game() {
         }
       }
 
-      // 2. Si on a déjà un gameId (venant du Lobby), on ne fait rien de plus
+      // 2. Si on a déjà un gameId (venant du Lobby), on récupère l'état actuel
       if (gameId) {
         if (!urlGameId) {
           window.history.replaceState(null, '', `/game?id=${gameId}`);
+        }
+        
+        try {
+          const { data, error } = await supabase
+            .from('games')
+            .select('*')
+            .eq('id', gameId)
+            .single();
+          
+          if (data && data.state) {
+            console.log("📥 État initial récupéré de la DB");
+            setGameState(data.state);
+            if (data.players) setPlayers(data.players);
+          }
+        } catch (err) {
+          console.error("Erreur fetch initial game state:", err);
         }
         return;
       }
@@ -248,15 +264,28 @@ export default function Game() {
   }, [gameState, user?.id, currentPlayer?.id, canProcessAI, gameId]);
 
   // Heartbeat: Maintenir la partie active dans le Lobby pendant l'attente
+  // Et vérifier si un joueur a rejoint (fallback pour le temps réel)
   useEffect(() => {
-    if (!gameId || gameState.state !== 'WAITING' || existingGameId) return;
+    if (!gameId || existingGameId) return;
 
     const interval = setInterval(async () => {
-      await supabase
-        .from('games')
-        .update({ updated_at: new Date().toISOString() })
-        .eq('id', gameId);
-    }, 60000); // Toutes les minutes
+      try {
+        const { data } = await supabase
+          .from('games')
+          .update({ updated_at: new Date().toISOString() })
+          .eq('id', gameId)
+          .select()
+          .single();
+
+        // Fallback: Si on est en attente mais que la DB dit qu'on peut jouer
+        if (gameState.state === 'WAITING' && data && data.state && data.state.state === 'PLAYING') {
+          console.log("🔄 Fallback: Démarrage de la partie détecté via polling");
+          setGameState(data.state);
+        }
+      } catch (err) {
+        console.error("Erreur heartbeat/polling:", err);
+      }
+    }, gameState.state === 'WAITING' ? 3000 : 60000); 
 
     return () => clearInterval(interval);
   }, [gameState.state, existingGameId, gameId]);
