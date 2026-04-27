@@ -63,6 +63,7 @@ export default function Game() {
 
   // Build players list
   const buildPlayers = useCallback(() => {
+    if (!user) return [];
     const human = { id: user.id, name: profile?.username || 'Vous', color: 'red', isAI: false };
     if (mode === 'solo') {
       return [human, makeAIPlayer('green', 'Mario', difficulty)];
@@ -79,10 +80,18 @@ export default function Game() {
     return [human, makeAIPlayer('green', 'IA', difficulty)];
   }, [mode, difficulty, user?.id, profile?.username]);
 
-  const [players] = useState(() => {
+  const [players, setPlayers] = useState(() => {
     if (initialPlayers.length > 0) return initialPlayers;
     return buildPlayers();
   });
+
+  useEffect(() => {
+    if (user && players.length === 0 && !urlGameId) {
+      const p = buildPlayers();
+      setPlayers(p);
+      setGameState(createInitialGameState(p, bet, isSolo));
+    }
+  }, [user, players.length, buildPlayers, bet, isSolo, urlGameId]);
   
   const [gameState, setGameState] = useState(() =>
     createInitialGameState(players, bet, isSolo)
@@ -150,16 +159,19 @@ export default function Game() {
 
       // 3. Sinon, on crée une nouvelle partie en base
       try {
+        const currentPlayers = players.length > 0 ? players : buildPlayers();
+        const currentState = (gameState.players && gameState.players.length > 0) ? gameState : createInitialGameState(currentPlayers, bet, isSolo);
+
         const { data, error } = await supabase
           .from('games')
           .insert([{
             user_id: user.id,
-            players,
+            players: currentPlayers,
             mode,
             bet_amount: bet,
             difficulty,
             status: 'active',
-            state: gameState,
+            state: currentState,
             is_private: isPrivate,
             invite_code: inviteCode,
             participant_ids: initialParticipantIds.length > 0 ? initialParticipantIds : [user.id]
@@ -602,8 +614,8 @@ export default function Game() {
             </div>
             <div className="mgh-turn-info">
               <span className="mgh-turn-label">{isHumanTurn ? "C'EST VOTRE TOUR," : "TOUR DE"}</span>
-              <span className="mgh-turn-name">{currentPlayer.name}</span>
-              <div className="mgh-status-dot" style={{ backgroundColor: COLOR_HEX[currentPlayer.color] || '#ccc' }} />
+              <span className="mgh-turn-name">{currentPlayer?.name || '...'}</span>
+              <div className="mgh-status-dot" style={{ backgroundColor: COLOR_HEX[currentPlayer?.color] || '#ccc' }} />
             </div>
           </div>
           <div className="mgh-scores">
