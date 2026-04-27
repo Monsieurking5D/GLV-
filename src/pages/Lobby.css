@@ -694,3 +694,33 @@
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 }
+
+.header-start-btn {
+  padding: var(--space-3) var(--space-6) !important;
+  font-size: var(--text-sm) !important;
+  font-weight: 700 !important;
+  box-shadow: 0 4px 15px rgba(245, 197, 24, 0.2);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.header-start-btn:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 6px 20px rgba(245, 197, 24, 0.3);
+}
+
+.header-bonus-card {
+  padding: 6px 12px !important;
+}
+
+@media (max-width: 600px) {
+  .lobby-header-right {
+    width: 100%;
+    margin-top: var(--space-4);
+  }
+  .header-start-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}

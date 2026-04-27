@@ -367,10 +367,23 @@ export default function Lobby() {
             <h1 className="lobby-title">Tableau de bord</h1>
           </div>
           <div className="lobby-header-right">
+            <button
+              className={`btn btn-gold header-start-btn ${(!currentMode?.available || isStarting) ? 'disabled-mode' : ''}`}
+              onClick={handleStartGame}
+              disabled={!currentMode?.available || isStarting}
+              id="header-start-btn"
+            >
+              {isStarting ? (
+                <div className="spinner" style={{width:16,height:16,borderWidth:2}} />
+              ) : (
+                <>🎲 Lancer la partie — {isSoloMode ? 'Gratuit' : `${selectedBet.toFixed(2)}€`}</>
+              )}
+            </button>
+
             {profile?.bonusBalance > 0 && (
-              <div className="balance-card" style={{ border: '1px solid var(--gold-primary)', background: 'rgba(245,197,24,0.05)' }}>
+              <div className="balance-card header-bonus-card" style={{ border: '1px solid var(--gold-primary)', background: 'rgba(245,197,24,0.05)' }}>
                 <div className="bonus-badge-mini" style={{ position: 'static' }}>
-                  🎁 {profile.bonusBalance.toFixed(0)}€ bloqués
+                  🎁 {profile.bonusBalance.toFixed(0)}€ bonus
                 </div>
               </div>
             )}

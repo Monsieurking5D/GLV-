@@ -259,13 +259,6 @@ export function moveToken(gameState, tokenData) {
     if (extraTurn) {
       if (diceValue === 6) {
         consecutiveSixes += 1;
-        // 3 fois 6 consécutifs → perd son tour (règle Unity)
-        if (consecutiveSixes >= 3) {
-          consecutiveSixes = 0;
-          extraTurn = false;
-          nextPlayerIndex = (currentPlayerIndex + 1) % players.length;
-          log.push({ text: `⛔ ${color} a 3 six consécutifs — perd son tour !`, time: Date.now() });
-        }
       } else {
         consecutiveSixes = 0;
       }
@@ -294,11 +287,30 @@ export function moveToken(gameState, tokenData) {
  * Si aucun pion ne peut bouger → passer au joueur suivant
  */
 export function processDiceRoll(gameState, diceValue) {
+  const { players, currentPlayerIndex, consecutiveSixes } = gameState;
+  const color = players[currentPlayerIndex].color;
+
+  // Règle 3 six consécutifs : le tour s'arrête immédiatement
+  if (diceValue === 6 && consecutiveSixes + 1 >= 3) {
+    const nextIndex = (currentPlayerIndex + 1) % players.length;
+    return {
+      ...gameState,
+      diceValue,
+      diceRolled: false,
+      currentPlayerIndex: nextIndex,
+      consecutiveSixes: 0,
+      log: [
+        ...gameState.log, 
+        { text: `🎲 ${color} lance un 3ème six ! Tour annulé.`, time: Date.now() }
+      ],
+    };
+  }
+
   const newState = {
     ...gameState,
     diceValue,
     diceRolled: true,
-    log: [...gameState.log, { text: `🎲 ${gameState.players[gameState.currentPlayerIndex].color} lance ${diceValue}`, time: Date.now() }],
+    log: [...gameState.log, { text: `🎲 ${color} lance ${diceValue}`, time: Date.now() }],
   };
 
   const movable = getMovablePieces(newState);
@@ -306,16 +318,19 @@ export function processDiceRoll(gameState, diceValue) {
 
   // Aucun pion mouvable → passer au suivant
   if (movable.length === 0) {
-    const nextIndex = (gameState.currentPlayerIndex + 1) % gameState.players.length;
+    const nextIndex = (currentPlayerIndex + 1) % players.length;
     return {
       ...newState,
       diceRolled: false,
       diceValue: null,
       currentPlayerIndex: nextIndex,
-      log: [...newState.log, { text: `${gameState.players[gameState.currentPlayerIndex].color} ne peut pas bouger.`, time: Date.now() }],
+      log: [...newState.log, { text: `${color} ne peut pas bouger.`, time: Date.now() }],
       consecutiveSixes: 0,
     };
   }
+
+  return newState;
+}
 
   // Si un seul pion mouvable → auto-select (optionnel, ici on laisse le joueur choisir)
   return newState;

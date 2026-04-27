@@ -24,7 +24,8 @@ export function getAIMove(gameState, difficulty = 'medium') {
   }
 
   const playerTokens = tokens[color];
-  const scoredMoves = movable.map(tokenId => {
+  const scoredMoves = movable.map(move => {
+    const tokenId = move.id;
     const token = playerTokens[tokenId];
     let score = 0;
 

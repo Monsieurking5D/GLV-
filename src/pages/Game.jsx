@@ -102,12 +102,8 @@ export default function Game() {
   const [showQuitConfirm, setShowQuitConfirm] = useState(false);
   const [isEnding, setIsEnding] = useState(false);
   const [toast, setToast] = useState(null);
-  const [activeTab, setActiveTab] = useState('log'); // 'log'
   const [lastDiceValue, setLastDiceValue] = useState(null);
-  const [messages, setMessages] = useState([]);
-  const [newMessage, setNewMessage] = useState('');
   
-  const logRef = useRef(null);
   const aiTimeoutRef = useRef(null);
   const winnerTimeoutRef = useRef(null);
   const gameIdRef = useRef(existingGameId);
@@ -349,44 +345,6 @@ export default function Game() {
     };
   }, [gameIdRef.current, gameState, user?.id, currentPlayer?.id, canProcessAI, existingGameId]);
 
-  // Chat: Charger les messages initiaux et écouter en temps réel
-  useEffect(() => {
-    if (!gameIdRef.current) return;
-
-    const fetchMessages = async () => {
-      const { data } = await supabase
-        .from('game_messages')
-        .select('*')
-        .eq('game_id', gameIdRef.current)
-        .order('created_at', { ascending: true });
-      if (data) setMessages(data);
-    };
-
-    fetchMessages();
-
-    const channel = supabase
-      .channel(`game_chat:${gameIdRef.current}`)
-      .on('postgres_changes', { 
-        event: 'INSERT', 
-        schema: 'public', 
-        table: 'game_messages',
-        filter: `game_id=eq.${gameIdRef.current}` 
-      }, (payload) => {
-        setMessages(prev => [...prev, payload.new]);
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [gameIdRef.current]);
-
-  // Auto-scroll chat & log
-  const chatEndRef = useRef(null);
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, activeTab]);
-
   const handleGameEnd = useCallback(async (winnerColor) => {
     if (isEnding) return;
     setIsEnding(true);
@@ -399,11 +357,11 @@ export default function Game() {
           const potTotal = bet * gameState.players.length;
           const commission = Math.min(potTotal * 0.10, 3.00);
           const winningsTotal = potTotal - commission;
-          const netGains = winningsTotal - bet; // Gain net à ajouter au solde
-
+          // IMPORTANT: amount doit être le montant TOTAL versé (mise récupérée + profit)
+          // car la mise a déjà été retirée au début.
           await addTransaction({
             type: 'win',
-            amount: netGains,
+            amount: winningsTotal,
             description: `🏆 Victoire ! (Commission: ${commission.toFixed(2)}€)`,
           });
           await updateProfile({
@@ -543,25 +501,6 @@ export default function Game() {
     }
   };
 
-  const handleSendMessage = async (e) => {
-    e.preventDefault();
-    if (!newMessage.trim() || !user || !gameIdRef.current) return;
-
-    const msg = newMessage.trim();
-    setNewMessage('');
-
-    try {
-      await supabase.from('game_messages').insert([{
-        game_id: gameIdRef.current,
-        user_id: user.id,
-        username: profile?.username || 'Joueur',
-        content: msg
-      }]);
-    } catch (err) {
-      console.error("Erreur envoi message:", err);
-    }
-  };
-
   const handleRestart = () => {
     clearTimeout(aiTimeoutRef.current);
     setGameState(createInitialGameState(buildPlayers(), bet));
@@ -575,7 +514,6 @@ export default function Game() {
   const potTotal = bet * numPlayers;
   const commission = Math.min(potTotal * 0.10, 3.00);
   const winnings = winnerIsHuman ? (potTotal - commission).toFixed(2) : 0;
-  const displayLog = [...(gameState?.log || [])].slice(-20).reverse();
 
   // CRITIQUE: rendu conditionnel APRÈS tous les hooks (sinon Rules of Hooks violées)
   if (!user) {
@@ -731,66 +669,6 @@ export default function Game() {
         {/* Right panel — Desktop only */}
         {!isMobile && (
           <div className="game-right-panel">
-            <div className="right-tabs">
-              <button 
-                className={`tab-btn ${activeTab === 'log' ? 'active' : ''}`}
-                onClick={() => setActiveTab('log')}
-              >
-                📋 Journal
-              </button>
-              <button 
-                className={`tab-btn ${activeTab === 'chat' ? 'active' : ''}`}
-                onClick={() => setActiveTab('chat')}
-              >
-                💬 Chat
-              </button>
-            </div>
-
-            <div className="tab-content">
-              {activeTab === 'log' ? (
-                <div className="game-log" ref={logRef}>
-                  {displayLog.length === 0 ? (
-                    <div className="log-empty">La partie commence...</div>
-                  ) : (
-                    displayLog.map((entry, i) => (
-                      <div key={i} className="log-entry">
-                        <span className="log-time">{new Date(entry.time).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
-                        <span className="log-text">{entry.text}</span>
-                      </div>
-                    ))
-                  )}
-                </div>
-              ) : (
-                <div className="chat-container">
-                  <div className="chat-messages">
-                    {messages.length === 0 ? (
-                      <div className="log-empty">Aucun message...</div>
-                    ) : (
-                      messages.map((msg, i) => (
-                        <div key={msg.id || i} className={`chat-bubble ${msg.user_id === user?.id ? 'mine' : ''}`}>
-                          <div className="chat-author">{msg.username}</div>
-                          <div className="chat-content">{msg.content}</div>
-                        </div>
-                      ))
-                    )}
-                    <div ref={chatEndRef} />
-                  </div>
-                  <form className="chat-input-form" onSubmit={handleSendMessage}>
-                    <input
-                      type="text"
-                      className="input chat-input"
-                      placeholder="Votre message..."
-                      value={newMessage}
-                      onChange={(e) => setNewMessage(e.target.value)}
-                    />
-                    <button type="submit" className="chat-send-btn">
-                      <span>🚀</span>
-                    </button>
-                  </form>
-                </div>
-              )}
-            </div>
-
             <div className="score-section">
               <div className="log-header">📊 Progression</div>
               {gameState?.players?.map(player => {
