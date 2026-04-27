@@ -1,4 +1,4 @@
-import { memo, useState, useEffect, startTransition } from 'react';
+import { memo, useState, useEffect, useRef, startTransition } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import './Navbar.css';
@@ -71,7 +71,9 @@ export default function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
+  const navRef = useRef(null);
 
+  // Fermer le menu si on redimensionne l'écran
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth > 768 && menuOpen) setMenuOpen(false);
@@ -80,9 +82,26 @@ export default function Navbar() {
     return () => window.removeEventListener('resize', handleResize);
   }, [menuOpen]);
 
+  // Fermer le menu au changement de route
   useEffect(() => {
     setMenuOpen(false);
   }, [location.pathname]);
+
+  // Fermer le menu si on clique en dehors de la navbar
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handleOutsideClick = (e) => {
+      if (navRef.current && !navRef.current.contains(e.target)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    document.addEventListener('touchstart', handleOutsideClick);
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+      document.removeEventListener('touchstart', handleOutsideClick);
+    };
+  }, [menuOpen]);
 
   const handleNavigate = (path) => {
     startTransition(() => {
@@ -94,7 +113,7 @@ export default function Navbar() {
   const isActive = (path) => location.pathname === path;
 
   return (
-    <nav className="navbar">
+    <nav className="navbar" ref={navRef}>
       <div className="navbar-inner">
         <div className="navbar-logo" onClick={() => handleNavigate(isAuthenticated ? '/lobby' : '/')} role="button" tabIndex={0}>
           <div className="logo-icon">
@@ -147,29 +166,26 @@ export default function Navbar() {
       </div>
 
       {menuOpen && (
-        <>
-          <div className="mobile-menu-overlay" onClick={() => setMenuOpen(false)} />
-          <div className="mobile-menu">
-            {isAuthenticated ? (
-              <>
-                <div className="mobile-menu-header">
-                  <strong>{profile?.username}</strong>
-                  <span>{profile?.email || user?.email}</span>
-                </div>
-                <button className="mobile-nav-link" onClick={() => handleNavigate('/lobby')}>🎮 Jouer</button>
-                <button className="mobile-nav-link" onClick={() => handleNavigate('/profile')}>👤 Mon Profil</button>
-                <button className="mobile-nav-link" onClick={() => handleNavigate('/stats')}>📊 Statistiques</button>
-                <div className="dropdown-divider" style={{margin: '8px 16px', opacity: 0.5}} />
-                <button className="mobile-nav-link danger" onClick={async () => { await signOut(); handleNavigate('/'); }}>🚪 Déconnexion</button>
-              </>
-            ) : (
-              <>
-                <button className="mobile-nav-link" onClick={() => handleNavigate('/auth?mode=login')}>Connexion</button>
-                <button className="mobile-nav-link" onClick={() => handleNavigate('/auth?mode=register')}>S'inscrire</button>
-              </>
-            )}
-          </div>
-        </>
+        <div className="mobile-menu">
+          {isAuthenticated ? (
+            <>
+              <div className="mobile-menu-header">
+                <strong>{profile?.username}</strong>
+                <span>{profile?.email || user?.email}</span>
+              </div>
+              <button className="mobile-nav-link" onClick={() => handleNavigate('/lobby')}>🎮 Jouer</button>
+              <button className="mobile-nav-link" onClick={() => handleNavigate('/profile')}>👤 Mon Profil</button>
+              <button className="mobile-nav-link" onClick={() => handleNavigate('/stats')}>📊 Statistiques</button>
+              <div className="dropdown-divider" style={{margin: '8px 16px', opacity: 0.5}} />
+              <button className="mobile-nav-link danger" onClick={async () => { await signOut(); handleNavigate('/'); }}>🚪 Déconnexion</button>
+            </>
+          ) : (
+            <>
+              <button className="mobile-nav-link" onClick={() => handleNavigate('/auth?mode=login')}>Connexion</button>
+              <button className="mobile-nav-link" onClick={() => handleNavigate('/auth?mode=register')}>S'inscrire</button>
+            </>
+          )}
+        </div>
       )}
     </nav>
   );
