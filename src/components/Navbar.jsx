@@ -113,11 +113,10 @@ export default function Navbar() {
           <span className="logo-text">Golden<span>Ludo</span></span>
         </div>
 
-        {/* Mobile: Centered Wallet */}
+        {/* Mobile: Centered Brand */}
         {isAuthenticated && (
-          <div className="navbar-wallet-mobile" onClick={() => handleNavigate('/lobby')}>
-            <span className="wallet-icon">💰</span>
-            <span className="wallet-amount">{(profile?.walletBalance || 0).toFixed(2)}€</span>
+          <div className="navbar-brand-mobile" onClick={() => handleNavigate('/lobby')}>
+            <span className="brand-text">Golden<span>Ludo</span></span>
           </div>
         )}
 
@@ -132,9 +131,8 @@ export default function Navbar() {
         <div className="navbar-right">
           {isAuthenticated ? (
             <>
-              <div className="wallet-pill desktop-only" onClick={() => handleNavigate('/lobby')} role="button">
-                <span className="wallet-icon">💰</span>
-                <span className="wallet-amount">{(profile?.walletBalance || 0).toFixed(2)}€</span>
+              <div className="brand-pill desktop-only" onClick={() => handleNavigate('/lobby')} role="button">
+                <span className="brand-text-mini">Golden<span>Ludo</span></span>
               </div>
               <UserMenu profile={profile} user={user} signOut={signOut} handleNavigate={handleNavigate} />
             </>
