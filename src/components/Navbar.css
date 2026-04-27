@@ -288,6 +288,7 @@
   border: none;
   cursor: pointer;
   padding: var(--space-2);
+  margin-right: -4px;
 }
 
 .hamburger span {
@@ -341,7 +342,10 @@
   .mobile-menu { display: flex; }
   .auth-buttons { display: none; }
   .navbar-logo .logo-text { display: none; }
-  .navbar-inner { gap: var(--space-2); padding: 0; }
-  .navbar-right { margin-left: 0; }
+  .navbar-inner { gap: var(--space-1); padding: 0; }
+  .navbar-right { margin-left: auto; }
   .navbar { padding: 0 var(--space-2); }
+  
+  /* Ensure logo stays next to hamburger but with some space */
+  .navbar-logo { margin-left: var(--space-1); }
 }
