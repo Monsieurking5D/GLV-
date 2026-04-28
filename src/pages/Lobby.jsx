@@ -231,7 +231,6 @@ export default function Lobby() {
 
   return (
     <div className="lobby">
-      {/* Header */}
       <div className="lobby-header">
         <div className="lobby-header-inner">
           <div className="header-main-area">
@@ -240,7 +239,6 @@ export default function Lobby() {
               <h1 className="lobby-title">Tableau de bord</h1>
             </div>
             
-            {/* Box Activité Récente */}
             <div className="header-activity-box">
               <div className="activity-mini-header">
                 <span>📊 Activité</span>
@@ -265,7 +263,6 @@ export default function Lobby() {
                 )}
               </div>
 
-              {/* Rules Popover */}
               {showRulesPopover && (
                 <div className="rules-popover" ref={rulesPopoverRef}>
                   <h3>📜 Règles du jeu</h3>

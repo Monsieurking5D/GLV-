@@ -19,13 +19,12 @@
 }
 
 .lobby-header-inner {
-  max-width: 1200px;
+  max-width: 1280px;
   margin: 0 auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  flex-wrap: wrap;
-  gap: var(--space-4);
+  gap: var(--space-6);
 }
 
 .lobby-greeting {
@@ -147,10 +146,8 @@
 .header-main-area {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--space-6);
+  gap: var(--space-8);
   flex: 1;
-  width: 100%;
 }
 
 .header-titles-group {
@@ -171,10 +168,10 @@
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid var(--border-glass);
   border-radius: var(--radius-lg);
-  padding: var(--space-3) var(--space-4);
-  width: 280px;
+  padding: var(--space-2) var(--space-4);
+  width: 320px;
   position: relative;
-  animation: slideInRight 0.5s ease-out;
+  margin-left: auto; /* Push to the right of the titles area */
 }
 
 @keyframes slideInRight {

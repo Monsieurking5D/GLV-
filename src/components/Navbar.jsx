@@ -141,18 +141,20 @@ export default function Navbar() {
 
         <div className="navbar-links">
           {isAuthenticated && (
-            <>
-              <button className={`nav-link ${isActive('/lobby') ? 'active' : ''}`} onClick={() => handleNavigate('/lobby')}>🎮 Jouer</button>
-            </>
+            <button className={`nav-link ${isActive('/lobby') ? 'active' : ''}`} onClick={() => handleNavigate('/lobby')}>🎮 Jouer</button>
           )}
         </div>
+
+        {/* Centered Title */}
+        {isAuthenticated && (
+          <div className="navbar-center-brand" onClick={() => handleNavigate('/lobby')} role="button">
+            <span className="brand-text-mini">Golden<span>Ludo</span></span>
+          </div>
+        )}
 
         <div className="navbar-right">
           {isAuthenticated ? (
             <>
-              <div className="brand-pill desktop-only" onClick={() => handleNavigate('/lobby')} role="button">
-                <span className="brand-text-mini">Golden<span>Ludo</span></span>
-              </div>
               <UserMenu profile={profile} user={user} signOut={signOut} handleNavigate={handleNavigate} />
             </>
           ) : (
