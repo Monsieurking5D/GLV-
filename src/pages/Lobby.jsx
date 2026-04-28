@@ -346,7 +346,7 @@ export default function Lobby() {
       {showConfigModal && (
         <div className="modal-overlay" onClick={() => setShowConfigModal(false)}>
           <div className="modal-content config-modal" onClick={e => e.stopPropagation()}>
-            <div className="modal-header"><h3>⚙️ CONFIGURATION</h3><button className="btn-close" onClick={() => setShowConfigModal(false)}>×</button></div>
+            <div className="modal-header"><h3><span>⚙️</span> CONFIGURATION</h3><button className="btn-close" onClick={() => setShowConfigModal(false)}>×</button></div>
             <div className="config-section">
               <div className="config-label">Mode</div>
               <div className="modes-grid-popup">
