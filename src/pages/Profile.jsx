@@ -39,6 +39,8 @@ export default function Profile() {
     );
   }
 
+  const transactions = profile?.transactions || [];
+
   return (
     <div style={{ minHeight: '100vh', paddingTop: '120px', paddingBottom: '60px', paddingLeft: 'var(--space-6)', paddingRight: 'var(--space-6)' }}>
       <div style={{ maxWidth: 800, margin: '0 auto', background: 'var(--bg-card)', padding: 'var(--space-8)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-glass)' }}>
@@ -84,39 +86,39 @@ export default function Profile() {
           </div>
         </div>
 
-        <div style={{ 
-          background: 'rgba(245, 197, 24, 0.05)', 
-          padding: 'var(--space-6)', 
-          borderRadius: 'var(--radius-md)', 
-          marginBottom: 'var(--space-6)',
-          border: '1px dashed var(--gold-primary)',
-          textAlign: 'center'
-        }}>
-          <h3 style={{ color: 'var(--gold-primary)', marginBottom: 'var(--space-2)' }}>🤝 Parrainage</h3>
-          <p style={{ color: 'var(--text-secondary)', marginBottom: 'var(--space-4)', fontSize: 'var(--text-sm)' }}>
-            Invitez vos amis et gagnez <strong className="text-gold">5€</strong> chacun !
-          </p>
-          <div style={{ 
-            background: 'var(--bg-deep)', 
-            padding: 'var(--space-3)', 
-            borderRadius: 'var(--radius-sm)', 
-            fontFamily: 'monospace', 
-            fontSize: '1.2rem',
-            color: 'var(--gold-primary)',
-            letterSpacing: '2px',
-            marginBottom: 'var(--space-2)'
-          }}>
-            {profile?.username || '---'}
-          </div>
-          <p style={{ color: 'var(--text-muted)', fontSize: 'var(--text-xs)' }}>Votre code de parrainage</p>
+        {/* Historique des Transactions */}
+        <div style={{ marginBottom: 'var(--space-6)' }}>
+          <h2 className="text-gold" style={{ fontSize: '1.25rem', marginBottom: 'var(--space-4)' }}>📊 Historique des transactions</h2>
+          {transactions.length === 0 ? (
+            <div style={{ padding: 'var(--space-4)', textAlign: 'center', color: 'var(--text-muted)', background: 'rgba(255,255,255,0.01)', borderRadius: 'var(--radius-md)', border: '1px dashed var(--border-subtle)' }}>
+              Aucune transaction pour le moment.
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+              {transactions.map(tx => (
+                <div key={tx.id} style={{ 
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  padding: 'var(--space-3) var(--space-4)', background: 'rgba(255,255,255,0.02)',
+                  borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)'
+                }}>
+                  <div>
+                    <div style={{ fontSize: 'var(--text-sm)', fontWeight: '600' }}>{tx.description}</div>
+                    <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{new Date(tx.created_at).toLocaleString()}</div>
+                  </div>
+                  <div style={{ 
+                    fontFamily: 'Outfit, sans-serif', fontWeight: '800',
+                    color: tx.amount > 0 ? 'var(--green-light)' : '#EF4444'
+                  }}>
+                    {tx.amount > 0 ? '+' : ''}{tx.amount.toFixed(2)}€
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
-        <p style={{ color: 'var(--text-muted)', marginBottom: 'var(--space-6)' }}>
-          L'historique des parties, les méthodes de dépôt/retrait et les options de compte complètes arrivent dans la prochaine mise à jour.
-        </p>
-
-        <button className="btn btn-outline" onClick={() => navigate(-1)}>
-          Retour
+        <button className="btn btn-outline" onClick={() => navigate('/lobby')}>
+          Retour au Lobby
         </button>
       </div>
     </div>
