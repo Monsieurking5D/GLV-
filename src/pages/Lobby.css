@@ -795,96 +795,217 @@
   text-transform: uppercase;
 }
 
-/* Public Games List */
-.public-games-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
+/* Dashboard Fluid Grid */
+.dashboard-grid {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--space-6) var(--space-6);
+  display: grid;
+  grid-template-columns: 1fr 320px 240px;
+  gap: var(--space-4);
+  align-items: stretch;
+}
+
+.dashboard-card {
   background: var(--bg-card);
   border: 1px solid var(--border-glass);
   border-radius: var(--radius-lg);
   padding: var(--space-4);
-  min-height: 300px;
 }
 
-.game-item-card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--space-3) var(--space-4);
-  background: var(--bg-glass);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  transition: all var(--transition-base);
-}
-
-.game-item-card:hover {
-  border-color: rgba(245,197,24,0.2);
-  background: var(--bg-glass-hover);
-}
-
-.game-item-card.full {
-  opacity: 0.7;
-}
-
-.game-item-info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.game-item-main {
-  display: flex;
-  align-items: center;
+/* Stats Column */
+.stats-grid-compact {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
   gap: var(--space-3);
 }
 
-.game-item-mode {
-  font-family: 'Outfit', sans-serif;
-  font-weight: 700;
-  font-size: var(--text-sm);
-  color: var(--text-primary);
+.stat-card-mini {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  transition: all 0.3s ease;
 }
 
-.game-item-bet {
+.stat-card-mini:hover {
+  border-color: rgba(245,197,24,0.2);
+  background: rgba(255,255,255,0.04);
+}
+
+.stat-icon-mini {
+  font-size: 1.25rem;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stat-info-mini {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-value-mini {
   font-family: 'Outfit', sans-serif;
+  font-size: var(--text-lg);
   font-weight: 700;
-  font-size: var(--text-base);
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.stat-value-mini.gold {
   color: var(--gold-primary);
 }
 
-.game-item-details {
-  font-size: var(--text-xs);
+.stat-label-mini {
+  font-size: 10px;
   color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
-.games-empty {
-  flex: 1;
+.deposit-mini {
+  cursor: pointer;
+  border-color: rgba(245,197,24,0.3) !important;
+  background: rgba(245,197,24,0.03) !important;
+}
+
+.deposit-mini:hover {
+  background: rgba(245,197,24,0.08) !important;
+  border-color: var(--gold-primary) !important;
+}
+
+/* Activity Column */
+.card-header-compact {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-3);
+}
+
+.card-title-mini {
+  font-family: 'Outfit', sans-serif;
+  font-size: var(--text-xs);
+  font-weight: 800;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.btn-link-mini {
+  background: none;
+  border: none;
+  color: var(--gold-primary);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.transactions-list-mini {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
   gap: var(--space-2);
-  color: var(--text-muted);
-  text-align: center;
-  font-size: var(--text-sm);
 }
 
-.games-empty span {
-  font-size: 2rem;
-  opacity: 0.5;
+.transaction-item-mini {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-2) var(--space-3);
+  background: rgba(255,255,255,0.02);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+}
+
+.tx-info-mini {
+  display: flex;
+  flex-direction: column;
+}
+
+.tx-desc-mini {
+  font-size: 11px;
+  color: var(--text-primary);
+}
+
+.tx-date-mini {
+  font-size: 9px;
+  color: var(--text-muted);
+}
+
+.tx-amount-mini {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+  font-size: 11px;
+}
+
+.tx-amount-mini.positive { color: var(--green-light); }
+.tx-amount-mini.negative { color: #EF4444; }
+
+/* Rules Dropdown */
+.rules-details {
+  width: 100%;
+}
+
+.rules-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  list-style: none;
+}
+
+.rules-summary::-webkit-details-marker { display: none; }
+
+.rules-content-mini {
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.rules-list-mini {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.rules-list-mini li {
+  font-size: 11px;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Public Games Section */
+.public-games-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  background: var(--bg-card);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  min-height: 200px;
 }
 
 /* Responsive */
 @media (max-width: 1200px) {
-  .lobby-columns { grid-template-columns: 1fr 1fr; }
-  .lobby-right { grid-column: span 2; }
+  .dashboard-grid { grid-template-columns: 1fr 1fr; }
+  .rules-column { grid-column: span 2; }
 }
 
-@media (max-width: 800px) {
+@media (max-width: 768px) {
+  .dashboard-grid { grid-template-columns: 1fr; padding: 0 var(--space-4) var(--space-4); }
+  .rules-column { grid-column: span 1; }
   .lobby-columns { grid-template-columns: 1fr; }
-  .lobby-right { grid-column: span 1; }
-  .stats-row { grid-template-columns: repeat(2, 1fr); }
 }
 
 @media (max-width: 600px) {

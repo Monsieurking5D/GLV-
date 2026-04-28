@@ -432,51 +432,88 @@ export default function Lobby() {
         </div>
       </div>
 
-      <div className="lobby-body">
-        <div className="lobby-columns">
-          {/* Left — Public Games & Stats */}
-          <div className="lobby-left">
-            {/* Stats (Large) */}
-            <div className="stats-row" style={{marginBottom: 'var(--space-2)'}}>
+        {/* Dashboard Grid: Stats + Recent + Rules */}
+        <div className="dashboard-grid">
+          {/* Stats Column */}
+          <div className="dashboard-card stats-column">
+            <div className="stats-grid-compact">
               {[
-                { label: 'Parties Jouées', value: stats.played, icon: '🎮' },
+                { label: 'Jouées', value: stats.played, icon: '🎮' },
                 { label: 'Victoires', value: stats.won, icon: '🏆', gold: true },
-                { label: 'Taux de Win', value: `${stats.winRate}%`, icon: '📈' },
-                { label: 'Portefeuille', value: `${balance.toFixed(2)}€`, icon: '💰', gold: true, deposit: true },
+                { label: 'Win Rate', value: `${stats.winRate}%`, icon: '📈' },
+                { label: 'Solde', value: `${balance.toFixed(2)}€`, icon: '💰', gold: true, deposit: true },
               ].map((s, i) => (
                 <div 
                   key={i} 
-                  className={`stat-card ${s.deposit ? 'deposit-card-btn' : ''}`}
+                  className={`stat-card-mini ${s.deposit ? 'deposit-mini' : ''}`}
                   onClick={s.deposit ? () => setShowDepositModal(true) : undefined}
                 >
-                  <span className="stat-icon">{s.icon}</span>
-                  <span className={`stat-value ${s.gold ? 'gold' : ''}`}>{s.value}</span>
-                  <span className="stat-label">{s.label}</span>
+                  <span className="stat-icon-mini">{s.icon}</span>
+                  <div className="stat-info-mini">
+                    <span className={`stat-value-mini ${s.gold ? 'gold' : ''}`}>{s.value}</span>
+                    <span className="stat-label-mini">{s.label}</span>
+                  </div>
                 </div>
               ))}
             </div>
+          </div>
 
-            <div className="lobby-section-title" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'var(--space-4)'}}>
-              🌍 Parties publiques en cours
+          {/* Recent Activity Column (Compact) */}
+          <div className="dashboard-card activity-column">
+            <div className="card-header-compact">
+              <span className="card-title-mini">📊 Activité</span>
+              <button className="btn-link-mini" onClick={() => navigate('/profile')}>Voir plus</button>
+            </div>
+            <div className="transactions-list-mini">
+              {transactions.length === 0 ? (
+                <div className="empty-mini">Aucune activité</div>
+              ) : (
+                transactions.slice(0, 2).map(tx => (
+                  <div className="transaction-item-mini" key={tx.id}>
+                    <div className="tx-info-mini">
+                      <span className="tx-desc-mini">{tx.description}</span>
+                      <span className="tx-date-mini">{new Date(tx.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}</span>
+                    </div>
+                    <span className={`tx-amount-mini ${tx.amount > 0 ? 'positive' : 'negative'}`}>
+                      {tx.amount > 0 ? '+' : ''}{tx.amount.toFixed(0)}€
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Rules Dropdown Column */}
+          <div className="dashboard-card rules-column">
+            <details className="rules-details">
+              <summary className="rules-summary">
+                <span className="card-title-mini">📜 Règles</span>
+                <span className="summary-icon">▼</span>
+              </summary>
+              <div className="rules-content-mini">
+                <ul className="rules-list-mini">
+                  <li>🎲 Lancez le dé pour jouer</li>
+                  <li>🔑 Un 6 pour sortir un pion</li>
+                  <li>💥 Capturez les ennemis</li>
+                  <li>⭐ Zones de sécurité</li>
+                  <li>🏁 4 pions au centre = Victoire</li>
+                  <li>🔄 6 = Tour bonus</li>
+                </ul>
+              </div>
+            </details>
+          </div>
+        </div>
+
+        <div className="lobby-columns">
+          {/* Left — Public Games */}
+          <div className="lobby-left">
+            <div className="lobby-section-title" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+              🌍 Parties publiques
               <button 
                className={`btn-refresh ${loadingGames ? 'rotating' : ''}`} 
                onClick={fetchPublicGames}
                title="Actualiser les parties"
                disabled={loadingGames}
-               style={{
-                 background: 'var(--bg-glass)',
-                 border: '1px solid var(--border-glass)',
-                 borderRadius: '50%',
-                 width: '32px',
-                 height: '32px',
-                 display: 'flex',
-                 alignItems: 'center',
-                 justifyContent: 'center',
-                 cursor: 'pointer',
-                 fontSize: '16px',
-                 transition: 'all 0.3s ease',
-                 opacity: loadingGames ? 0.6 : 1
-               }}
               >
                 🔄
               </button>
@@ -486,14 +523,14 @@ export default function Lobby() {
               {loadingGames ? (
                 <div className="games-empty">
                   <div className="spinner" />
-                  <p>Recherche de parties...</p>
+                  <p>Recherche...</p>
                 </div>
               ) : publicGames.length === 0 ? (
                 <div className="games-empty">
                   <span>🎲</span>
-                  <p>Aucune partie publique disponible pour le moment.</p>
+                  <p>Aucune partie publique.</p>
                   <button className="btn btn-ghost btn-sm" onClick={() => setShowConfigModal(true)} style={{marginTop: 16}}>
-                    Créer la première partie
+                    Créer une partie
                   </button>
                 </div>
               ) : (
@@ -531,12 +568,12 @@ export default function Lobby() {
               )}
             </div>
 
-            <div className="join-private-section" style={{marginTop: 'var(--space-4)'}}>
+            <div className="join-private-section">
               <div className="divider-text">OU REJOINDRE PAR CODE PRIVÉ</div>
               <div className="join-private-card">
                 <input 
                   type="text" 
-                  placeholder="Entrez le code d'invitation" 
+                  placeholder="Code d'invitation" 
                   className="input"
                   value={joinCode}
                   onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
@@ -546,43 +583,6 @@ export default function Lobby() {
                   Rejoindre
                 </button>
               </div>
-            </div>
-          </div>
-
-          {/* Right — Transactions & Rules */}
-          <div className="lobby-right">
-            <div className="lobby-section-title">📊 Activité récente</div>
-            <div className="transactions-list">
-              {transactions.length === 0 ? (
-                <div className="no-transactions">
-                  <span>🎲</span>
-                  <p>Aucune transaction récente.</p>
-                </div>
-              ) : (
-                transactions.map(tx => (
-                  <div className="transaction-item" key={tx.id}>
-                    <div className="tx-info">
-                      <span className="tx-desc">{tx.description}</span>
-                      <span className="tx-date">{new Date(tx.created_at).toLocaleDateString('fr-FR')}</span>
-                    </div>
-                    <span className={`tx-amount ${tx.amount > 0 ? 'positive' : 'negative'}`}>
-                      {tx.amount > 0 ? '+' : ''}{tx.amount.toFixed(2)}€
-                    </span>
-                  </div>
-                ))
-              )}
-            </div>
-
-            <div className="quick-rules">
-              <div className="lobby-section-title" style={{marginBottom: 12}}>📜 Règles du jeu</div>
-              <ul className="rules-list">
-                <li>🎲 Lancez le dé pour jouer votre tour</li>
-                <li>🔑 Un 6 est requis pour sortir un pion de la base</li>
-                <li>💥 Capturez les pions ennemis en tombant sur leur case</li>
-                <li>⭐ Les étoiles sont des zones de sécurité</li>
-                <li>🏁 Amenez vos 4 pions au centre pour gagner</li>
-                <li>🔄 Un 6 offre un tour bonus (limité à 2 d'affilée)</li>
-              </ul>
             </div>
           </div>
         </div>
