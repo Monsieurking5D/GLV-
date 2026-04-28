@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useTransition } from 'react';
+import { useState, useEffect, useCallback, useTransition, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { supabase } from '../lib/supabase';
@@ -73,6 +73,25 @@ export default function Lobby() {
   const [publicGames, setPublicGames] = useState([]);
   const [loadingGames, setLoadingGames] = useState(true);
   const [showRulesPopover, setShowRulesPopover] = useState(false);
+  const rulesPopoverRef = useRef(null);
+
+  // Close rules popover on click outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showRulesPopover && rulesPopoverRef.current && !rulesPopoverRef.current.contains(event.target)) {
+        // Check if the click was NOT on the info button itself
+        if (!event.target.closest('.btn-rules-info')) {
+          setShowRulesPopover(false);
+        }
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [showRulesPopover]);
 
   const fetchPublicGames = useCallback(async () => {
     setLoadingGames(true);
@@ -245,7 +264,7 @@ export default function Lobby() {
 
               {/* Rules Popover */}
               {showRulesPopover && (
-                <div className="rules-popover">
+                <div className="rules-popover" ref={rulesPopoverRef}>
                   <h3>📜 Règles du jeu</h3>
                   <ul>
                     <li>🎲 Un 6 pour sortir un pion</li>
