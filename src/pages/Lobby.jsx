@@ -432,6 +432,7 @@ export default function Lobby() {
         </div>
       </div>
 
+      <div className="lobby-body">
         {/* Dashboard Grid: Stats + Recent + Rules */}
         <div className="dashboard-grid">
           {/* Stats Column */}
