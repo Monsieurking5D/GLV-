@@ -464,6 +464,7 @@ a { text-decoration: none; color: inherit; }
   z-index: 1000;
   animation: fade-in var(--transition-base) ease;
   padding: var(--space-4);
+  padding-top: calc(72px + var(--space-4)); /* Compenser la navbar fixe */
 }
 
 .modal-content {

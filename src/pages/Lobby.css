@@ -336,7 +336,7 @@
   max-width: 500px !important;
   padding: 0 !important;
   overflow: hidden;
-  max-height: 90vh;
+  max-height: calc(100vh - 72px - 32px); /* 72px navbar + marges */
   overflow-y: auto;
 }
 
