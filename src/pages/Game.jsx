@@ -348,23 +348,70 @@ export default function Game() {
       try {
         const myPlayer = players.find(p => p.id === user?.id);
         if (winnerColor === myPlayer?.color) {
-          // Nouveau système de commission : 10% plafonné à 3€
+          // --- NOUVEAU SYSTÈME DE COMMISSION DYNAMIQUE ---
           const potTotal = bet * gameState.players.length;
-          const commission = Math.min(potTotal * 0.10, 3.00);
+          let commissionRate = 0.10; // Par défaut 10%
+          let cap = 2.00;
+
+          if (bet < 5) {
+            commissionRate = 0.15; // Micro: 15%
+            cap = 999; // Pas de cap pour les micro-mises
+          } else if (bet >= 20) {
+            commissionRate = 0.07; // High Roller: 7%
+            cap = 3.00;
+          }
+
+          const commission = Math.min(potTotal * commissionRate, cap);
           const winningsTotal = potTotal - commission;
-          // IMPORTANT: amount doit être le montant TOTAL versé (mise récupérée + profit)
-          // car la mise a déjà été retirée au début.
+
+          // Versement du gain au vainqueur
           await addTransaction({
             type: 'win',
             amount: winningsTotal,
-            description: `🏆 Victoire ! (Commission: ${commission.toFixed(2)}€)`,
+            description: `🏆 Victoire ! (Comm: ${commission.toFixed(2)}€)`,
           });
+
+          // --- SYSTÈME DE REVSHARE (PARRAINAGE HYBRIDE) ---
+          if (profile?.referredBy) {
+            // Récupérer les infos du parrain pour le RevShare
+            const { data: referrer, error: refError } = await supabase
+              .from('profiles')
+              .select('id, agent_level')
+              .eq('id', profile.referredBy)
+              .single();
+
+            if (!refError && referrer) {
+              // Taux de RevShare selon le niveau de l'agent
+              let revShareRate = 0.10; // Standard: 10% de la commission
+              if (referrer.agent_level === 'silver') revShareRate = 0.15;
+              if (referrer.agent_level === 'gold') revShareRate = 0.25;
+
+              const referralBonus = commission * revShareRate;
+
+              if (referralBonus > 0.01) {
+                // On utilise un appel RPC ou un insert direct (le trigger s'occupera du solde)
+                await supabase.from('transactions').insert({
+                  user_id: referrer.id,
+                  amount: referralBonus,
+                  type: 'referral_bonus',
+                  description: `🤝 Com. parrainage (${profile.username})`
+                });
+                
+                // Mise à jour du compteur de gains de parrainage
+                await supabase.rpc('increment_referral_earnings', { 
+                  user_id: referrer.id, 
+                  amount: referralBonus 
+                });
+              }
+            }
+          }
+
           await updateProfile({
             gamesPlayed: (profile?.gamesPlayed || 0) + 1,
             gamesWon: (profile?.gamesWon || 0) + 1,
           });
         } else {
-          // La mise a déjà été débitée au lancement dans Lobby.jsx — on enregistre juste l'événement
+          // Perte
           await addTransaction({
             type: 'loss',
             amount: 0,

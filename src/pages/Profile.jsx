@@ -85,6 +85,68 @@ export default function Profile() {
             </p>
           </div>
         </div>
+        
+        {/* SYSTÈME DE PARRAINAGE ET AGENT */}
+        <div style={{ background: 'rgba(245,197,24,0.05)', padding: 'var(--space-6)', borderRadius: 'var(--radius-md)', marginBottom: 'var(--space-6)', border: '1px solid rgba(245,197,24,0.1)' }}>
+          <h2 className="text-gold" style={{ fontSize: '1.25rem', marginBottom: 'var(--space-2)', display: 'flex', alignItems: 'center', gap: 10 }}>
+            🤝 Programme Partenaire 
+            <span style={{ fontSize: 'var(--text-xs)', background: 'var(--gold-primary)', color: 'var(--bg-deep)', padding: '2px 8px', borderRadius: 10, textTransform: 'uppercase' }}>
+              {profile?.agent_level || 'Player'}
+            </span>
+          </h2>
+          <p style={{ color: 'var(--text-secondary)', fontSize: 'var(--text-sm)', marginBottom: 'var(--space-4)' }}>
+            Gagnez de l'argent sur chaque partie jouée par vos amis.
+          </p>
+          
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)', marginBottom: 'var(--space-4)' }}>
+            <div style={{ background: 'rgba(255,255,255,0.03)', padding: 'var(--space-4)', borderRadius: 'var(--radius-sm)' }}>
+              <div style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Gains totaux</div>
+              <div style={{ fontSize: '1.5rem', fontWeight: '800', color: 'var(--gold-primary)' }}>{(profile?.referral_earnings || 0).toFixed(2)}€</div>
+            </div>
+            <div style={{ background: 'rgba(255,255,255,0.03)', padding: 'var(--space-4)', borderRadius: 'var(--radius-sm)' }}>
+              <div style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Partage (RevShare)</div>
+              <div style={{ fontSize: '1.5rem', fontWeight: '800', color: 'var(--text-primary)' }}>
+                {profile?.agent_level === 'gold' ? '25%' : profile?.agent_level === 'silver' ? '15%' : '10%'}
+              </div>
+            </div>
+          </div>
+
+          <div style={{ position: 'relative' }}>
+            <label style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>VOTRE CODE DE PARRAINAGE</label>
+            <div style={{ 
+              display: 'flex', gap: 8, background: 'var(--bg-deep)', padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border-glass)',
+              fontFamily: 'monospace', fontSize: '1.1rem', color: 'var(--gold-primary)', fontWeight: 'bold'
+            }}>
+              {profile?.username}
+              <button 
+                onClick={() => {
+                  navigator.clipboard.writeText(profile?.username);
+                  alert('Code copié !');
+                }}
+                style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '12px' }}
+              >
+                Copier
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* SECTION RETRAIT AVEC FRAIS DYNAMIQUES */}
+        <div style={{ background: 'rgba(255,255,255,0.02)', padding: 'var(--space-6)', borderRadius: 'var(--radius-md)', marginBottom: 'var(--space-6)', border: '1px solid var(--border-subtle)' }}>
+          <h2 className="text-gold" style={{ fontSize: '1.25rem', marginBottom: 'var(--space-4)' }}>💸 Retrait des gains</h2>
+          <div style={{ marginBottom: 'var(--space-4)' }}>
+            <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)' }}>
+              Frais de retrait : <strong style={{ color: 'var(--text-primary)' }}>1er retrait du mois gratuit</strong>, puis 1€ + 2%.
+            </p>
+          </div>
+          <button 
+            className="btn btn-gold w-full" 
+            onClick={() => alert("Le module de paiement Stripe/PayPal est en cours d'intégration. Vos gains sont en sécurité.")}
+            disabled={profile?.withdrawableBalance < 10}
+          >
+            {profile?.withdrawableBalance < 10 ? 'Minimum 10€ pour retirer' : 'Effectuer un retrait'}
+          </button>
+        </div>
 
         {/* Historique des Transactions */}
         <div style={{ marginBottom: 'var(--space-6)' }}>
