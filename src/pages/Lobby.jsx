@@ -246,7 +246,7 @@ export default function Lobby() {
                 <span>📊 Activité</span>
                 <div className="header-actions-mini">
                   <button className="btn-voir-plus" onClick={() => navigate('/profile')}>Voir plus</button>
-                  <button className="btn-rules-info" onClick={() => setShowRulesPopover(!showRulesPopover)}>ⓘ</button>
+                  <button className="btn-rules-info" onClick={() => startTransition(() => setShowRulesPopover(!showRulesPopover))}>ⓘ</button>
                 </div>
               </div>
               
@@ -283,8 +283,8 @@ export default function Lobby() {
           </div>
 
           <div className="lobby-header-right">
-            <button className="btn btn-ghost header-deposit-btn" onClick={() => setShowDepositModal(true)}>💰 Dépôt</button>
-            <button className="btn btn-gold header-start-btn" onClick={() => setShowConfigModal(true)} disabled={isStarting}>
+            <button className="btn btn-ghost header-deposit-btn" onClick={() => startTransition(() => setShowDepositModal(true))}>💰 Dépôt</button>
+            <button className="btn btn-gold header-start-btn" onClick={() => startTransition(() => setShowConfigModal(true))} disabled={isStarting}>
               {isStarting ? <div className="spinner-mini" /> : <>🎲 Créer une partie</>}
             </button>
           </div>
@@ -300,7 +300,7 @@ export default function Lobby() {
             { label: 'Win Rate', value: `${stats.winRate}%`, icon: '📈' },
             { label: 'Portefeuille', value: `${balance.toFixed(2)}€`, icon: '💰', gold: true, deposit: true },
           ].map((s, i) => (
-            <div key={i} className={`stat-card ${s.deposit ? 'deposit-card-btn' : ''}`} onClick={s.deposit ? () => setShowDepositModal(true) : undefined}>
+            <div key={i} className={`stat-card ${s.deposit ? 'deposit-card-btn' : ''}`} onClick={s.deposit ? () => startTransition(() => setShowDepositModal(true)) : undefined}>
               <span className="stat-icon">{s.icon}</span>
               <span className={`stat-value ${s.gold ? 'gold' : ''}`}>{s.value}</span>
               <span className="stat-label">{s.label}</span>
