@@ -582,7 +582,16 @@ export default function Game() {
   const winnerIsHuman = gameState?.winner === myPlayer?.color;
   const numPlayers = gameState?.players?.length || 2;
   const potTotal = bet * numPlayers;
-  const commission = Math.min(potTotal * 0.10, 3.00);
+  let commissionRate = 0.10;
+  let cap = 2.00;
+  if (bet < 5) {
+    commissionRate = 0.15;
+    cap = 999;
+  } else if (bet >= 20) {
+    commissionRate = 0.07;
+    cap = 3.00;
+  }
+  const commission = Math.min(potTotal * commissionRate, cap);
   const winnings = winnerIsHuman ? (potTotal - commission).toFixed(2) : 0;
 
   // CRITIQUE: rendu conditionnel APRÈS tous les hooks (sinon Rules of Hooks violées)

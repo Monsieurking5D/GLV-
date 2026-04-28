@@ -379,7 +379,22 @@ export default function Lobby() {
                   <div className="potential-gain-info">
                     <span className="gain-label">💰 Gain potentiel si vous gagnez :</span>
                     <span className="gain-value">
-                      {(selectedBet * (GAME_MODES.find(m => m.id === selectedMode)?.players || 1)).toFixed(2)}€
+                      {(() => {
+                        const playersCount = GAME_MODES.find(m => m.id === selectedMode)?.players || 1;
+                        const potTotal = selectedBet * playersCount;
+                        let commissionRate = 0.10;
+                        let cap = 2.00;
+                        if (selectedBet < 5) {
+                          commissionRate = 0.15;
+                          cap = 999;
+                        } else if (selectedBet >= 20) {
+                          commissionRate = 0.07;
+                          cap = 3.00;
+                        }
+                        const commission = Math.min(potTotal * commissionRate, cap);
+                        const winningsTotal = potTotal - commission;
+                        return winningsTotal.toFixed(2);
+                      })()}€
                     </span>
                   </div>
                 </div>
