@@ -383,7 +383,6 @@
   }
   
   .navbar-logo { grid-column: 1; justify-self: start; }
-  .navbar-brand-mobile { grid-column: 2; display: flex; align-items: center; }
   .navbar-right { grid-column: 3; justify-self: end; margin-left: 0; }
   
   .navbar { padding: 0 var(--space-4); }

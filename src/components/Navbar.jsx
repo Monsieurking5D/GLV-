@@ -132,25 +132,11 @@ export default function Navbar() {
           <span className="logo-text">Golden<span>Ludo</span></span>
         </div>
 
-        {/* Mobile: Centered Brand */}
-        {isAuthenticated && (
-          <div className="navbar-brand-mobile" onClick={() => handleNavigate('/lobby')}>
-            <span className="brand-text">Golden<span>Ludo</span></span>
-          </div>
-        )}
-
         <div className="navbar-links">
           {isAuthenticated && (
             <button className={`nav-link ${isActive('/lobby') ? 'active' : ''}`} onClick={() => handleNavigate('/lobby')}>🎮 Jouer</button>
           )}
         </div>
-
-        {/* Centered Title */}
-        {isAuthenticated && (
-          <div className="navbar-center-brand" onClick={() => handleNavigate('/lobby')} role="button">
-            <span className="brand-text-mini">Golden<span>Ludo</span></span>
-          </div>
-        )}
 
         <div className="navbar-right">
           {isAuthenticated ? (
