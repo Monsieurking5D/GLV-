@@ -148,20 +148,21 @@ export default function Lobby() {
           difficulty: selectedDifficulty 
         });
       }
-      navigate('/game', {
-        state: {
-          mode: selectedMode,
-          bet: selectedMode === 'solo' ? 0 : selectedBet,
-          players: initialPlayers.map(p => ({ ...p, bet_paid: selectedMode !== 'solo' && p.id === profile.id })),
-          difficulty: selectedDifficulty,
-          isPrivate,
-          inviteCode: code,
-          participantIds: [profile.id],
-          maxPlayers: GAME_MODES.find(m => m.id === selectedMode).players,
-          isSolo: selectedMode === 'solo',
-          betTransactionId: selectedMode !== 'solo'
-        }
-      });
+      // Store game params in sessionStorage and open in new tab
+      const gameParams = {
+        mode: selectedMode,
+        bet: selectedMode === 'solo' ? 0 : selectedBet,
+        players: initialPlayers.map(p => ({ ...p, bet_paid: selectedMode !== 'solo' && p.id === profile.id })),
+        difficulty: selectedDifficulty,
+        isPrivate,
+        inviteCode: code,
+        participantIds: [profile.id],
+        maxPlayers: GAME_MODES.find(m => m.id === selectedMode).players,
+        isSolo: selectedMode === 'solo',
+        betTransactionId: selectedMode !== 'solo'
+      };
+      sessionStorage.setItem('pendingGameParams', JSON.stringify(gameParams));
+      window.open('/game', '_blank');
     } catch (err) {
       console.error("Erreur lancement partie:", err);
     } finally {
@@ -176,7 +177,8 @@ export default function Lobby() {
       const { data: game } = await supabase.from('games').select('*').eq('id', gameToJoin.id).single();
       if (!game) throw new Error("Partie introuvable");
       if (game.participant_ids?.includes(profile.id)) {
-        navigate('/game', { state: { gameId: game.id, mode: game.mode, bet: game.bet_amount } });
+        sessionStorage.setItem('pendingGameParams', JSON.stringify({ gameId: game.id, mode: game.mode, bet: game.bet_amount }));
+        window.open('/game', '_blank');
         return;
       }
       if (game.participant_ids?.length >= (game.max_players || 2)) {
@@ -195,7 +197,8 @@ export default function Lobby() {
       }
       const { error } = await supabase.from('games').update({ participant_ids: newParticipantIds, players: updatedPlayers }).eq('id', game.id);
       if (error) throw error;
-      navigate('/game', { state: { mode: game.mode, bet: game.bet_amount, players: updatedPlayers, gameId: game.id, participantIds: newParticipantIds } });
+      sessionStorage.setItem('pendingGameParams', JSON.stringify({ mode: game.mode, bet: game.bet_amount, players: updatedPlayers, gameId: game.id, participantIds: newParticipantIds }));
+      window.open('/game', '_blank');
     } catch (err) {
       console.error(err);
     } finally { setIsStarting(false); }

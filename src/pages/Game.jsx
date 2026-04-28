@@ -39,6 +39,20 @@ export default function Game() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // Read params from sessionStorage when opened in new tab (no location.state)
+  const pendingParams = (() => {
+    try {
+      const raw = sessionStorage.getItem('pendingGameParams');
+      if (raw) {
+        sessionStorage.removeItem('pendingGameParams');
+        return JSON.parse(raw);
+      }
+    } catch {}
+    return null;
+  })();
+
+  const stateSource = location.state || pendingParams || {};
+
   const { 
     mode = '1v1', 
     bet = 0, 
@@ -49,7 +63,7 @@ export default function Game() {
     gameId: existingGameId = null,
     participantIds: initialParticipantIds = [],
     isSolo = false
-  } = location.state || {};
+  } = stateSource;
 
   const queryParams = new URLSearchParams(location.search);
   const urlGameId = queryParams.get('id');
@@ -120,6 +134,20 @@ export default function Game() {
     setToast(msg);
     setTimeout(() => setToast(null), 2500);
   };
+
+  // Block tab close/refresh while game is in progress
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      const isOver = gameState?.winner || showWinner;
+      if (!isOver) {
+        e.preventDefault();
+        e.returnValue = 'La partie est en cours. Si vous partez maintenant, vous pourrez perdre votre mise. Êtes-vous sûr de vouloir quitter ?';
+        return e.returnValue;
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [gameState?.winner, showWinner]);
 
   // Persistence: Sauvegarder la partie initialement ou la restaurer
   useEffect(() => {
