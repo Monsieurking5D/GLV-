@@ -212,51 +212,51 @@ export default function Lobby() {
       {/* Header */}
       <div className="lobby-header">
         <div className="lobby-header-inner">
-          <div className="header-left-side">
-            <p className="lobby-greeting">Bonjour, <span>{profile?.username}</span> 👋</p>
-            <div className="title-row-container">
+          <div className="header-main-area">
+            <div className="header-titles-group">
+              <p className="lobby-greeting">Bonjour, <span>{profile?.username}</span> 👋</p>
               <h1 className="lobby-title">Tableau de bord</h1>
+            </div>
+            
+            {/* Box Activité Récente */}
+            <div className="header-activity-box">
+              <div className="activity-mini-header">
+                <span>📊 Activité</span>
+                <div className="header-actions-mini">
+                  <button className="btn-voir-plus" onClick={() => navigate('/profile')}>Voir plus</button>
+                  <button className="btn-rules-info" onClick={() => setShowRulesPopover(!showRulesPopover)}>ⓘ</button>
+                </div>
+              </div>
               
-              {/* Box Activité Récente (Target Area) */}
-              <div className="header-activity-box">
-                <div className="activity-mini-header">
-                  <span>📊 Activité</span>
-                  <div className="header-actions-mini">
-                    <button className="btn-voir-plus" onClick={() => navigate('/profile')}>Voir plus</button>
-                    <button className="btn-rules-info" onClick={() => setShowRulesPopover(!showRulesPopover)}>ⓘ</button>
-                  </div>
-                </div>
-                
-                <div className="activity-mini-list">
-                  {transactions.length === 0 ? (
-                    <div className="mini-empty">Aucune activité</div>
-                  ) : (
-                    transactions.map(tx => (
-                      <div key={tx.id} className="mini-tx-item">
-                        <span className="mini-tx-desc">{tx.description.split(' ')[0]}...</span>
-                        <span className={`mini-tx-amt ${tx.amount > 0 ? 'pos' : 'neg'}`}>
-                          {tx.amount > 0 ? '+' : ''}{tx.amount.toFixed(0)}€
-                        </span>
-                      </div>
-                    ))
-                  )}
-                </div>
-
-                {/* Rules Popover */}
-                {showRulesPopover && (
-                  <div className="rules-popover">
-                    <h3>📜 Règles du jeu</h3>
-                    <ul>
-                      <li>🎲 Un 6 pour sortir un pion</li>
-                      <li>💥 Capturez les pions ennemis</li>
-                      <li>⭐ Zones de sécurité (étoiles)</li>
-                      <li>🏁 4 pions au centre pour gagner</li>
-                      <li>🔄 Un 6 offre un tour bonus</li>
-                    </ul>
-                    <button className="popover-close" onClick={() => setShowRulesPopover(false)}>×</button>
-                  </div>
+              <div className="activity-mini-list">
+                {transactions.length === 0 ? (
+                  <div className="mini-empty">Aucune activité</div>
+                ) : (
+                  transactions.map(tx => (
+                    <div key={tx.id} className="mini-tx-item">
+                      <span className="mini-tx-desc">{tx.description.split(' ')[0]}...</span>
+                      <span className={`mini-tx-amt ${tx.amount > 0 ? 'pos' : 'neg'}`}>
+                        {tx.amount > 0 ? '+' : ''}{tx.amount.toFixed(0)}€
+                      </span>
+                    </div>
+                  ))
                 )}
               </div>
+
+              {/* Rules Popover */}
+              {showRulesPopover && (
+                <div className="rules-popover">
+                  <h3>📜 Règles du jeu</h3>
+                  <ul>
+                    <li>🎲 Un 6 pour sortir un pion</li>
+                    <li>💥 Capturez les pions ennemis</li>
+                    <li>⭐ Zones de sécurité (étoiles)</li>
+                    <li>🏁 4 pions au centre pour gagner</li>
+                    <li>🔄 Un 6 offre un tour bonus</li>
+                  </ul>
+                  <button className="popover-close" onClick={() => setShowRulesPopover(false)}>×</button>
+                </div>
+              )}
             </div>
           </div>
 
