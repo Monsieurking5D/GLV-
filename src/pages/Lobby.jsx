@@ -333,12 +333,72 @@ export default function Lobby() {
               <div className="modes-grid-popup">
                 {GAME_MODES.map(mode => (
                   <div key={mode.id} className={`mode-card-popup ${selectedMode === mode.id ? 'selected' : ''}`} onClick={() => setSelectedMode(mode.id)}>
-                    <div>{mode.icon}</div><div>{mode.label}</div>
+                    <div className="mode-icon">{mode.icon}</div>
+                    <div className="mode-name">{mode.label}</div>
                   </div>
                 ))}
               </div>
             </div>
-            <div className="modal-footer"><button className="btn btn-gold w-full" onClick={handleStartGame}>🚀 Lancer</button></div>
+
+            {selectedMode !== 'solo' ? (
+              <>
+                <div className="config-section">
+                  <div className="config-label">Mise de la partie</div>
+                  <div className="bet-amounts-popup">
+                    {BET_AMOUNTS.map(amount => (
+                      <button
+                        key={amount}
+                        className={`bet-amount-btn ${selectedBet === amount ? 'selected' : ''} ${balance < amount ? 'insufficient' : ''}`}
+                        onClick={() => setSelectedBet(amount)}
+                      >
+                        {amount}€
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="config-section">
+                  <div className="private-toggle-card popup" onClick={() => setIsPrivate(!isPrivate)}>
+                    <div className="private-info">
+                      <span className="private-label">Partie Privée ?</span>
+                      <span className="private-desc">Seuls ceux avec le code pourront rejoindre</span>
+                    </div>
+                    <div className={`toggle-switch ${isPrivate ? 'on' : ''}`}>
+                      <div className="toggle-handle" />
+                    </div>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="config-section">
+                <div className="config-label">Difficulté de l'IA</div>
+                <div className="difficulty-buttons">
+                  {DIFFICULTIES.map(d => (
+                    <button
+                      key={d.id}
+                      className={`difficulty-btn ${selectedDifficulty === d.id ? 'selected' : ''}`}
+                      style={{ '--diff-color': d.color }}
+                      onClick={() => setSelectedDifficulty(d.id)}
+                    >
+                      {d.icon} {d.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="modal-footer">
+              {selectedMode !== 'solo' && balance < selectedBet && (
+                <p className="insufficient-warning">⚠️ Solde insuffisant</p>
+              )}
+              <button
+                className="btn btn-gold w-full"
+                onClick={handleStartGame}
+                disabled={isStarting || (selectedMode !== 'solo' && balance < selectedBet)}
+              >
+                {isStarting ? <div className="spinner-mini" /> : <>🚀 Lancer la partie</>}
+              </button>
+            </div>
           </div>
         </div>
       )}
