@@ -355,6 +355,14 @@ export default function Lobby() {
                       </button>
                     ))}
                   </div>
+                  
+                  {/* Potential Gain Display */}
+                  <div className="potential-gain-info">
+                    <span className="gain-label">💰 Gain potentiel si vous gagnez :</span>
+                    <span className="gain-value">
+                      {(selectedBet * (GAME_MODES.find(m => m.id === selectedMode)?.players || 1)).toFixed(2)}€
+                    </span>
+                  </div>
                 </div>
 
                 <div className="config-section">
